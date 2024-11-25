@@ -5,9 +5,9 @@ channels:
   - nodefaults
 dependencies:
   # core functionality
-  - python=3.12
+  - python=3.13
   # panel
-  - panel=1.5.2 # https://anaconda.org/conda-forge/panel/files
+  - panel=1.6.1 # https://anaconda.org/conda-forge/panel/files
   # data science
   - jupyterlab
   - scipy  

@@ -1,3 +1,5 @@
-bw2data==4.0.dev52
-bw2io==0.9.dev37
+bw2data==4.4.2
+bw2io==0.9.6
+bw2calc==2.0.1
+bw_graph_tools==0.5
 lzma
