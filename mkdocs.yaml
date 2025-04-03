@@ -1,0 +1,72 @@
+# https://www.mkdocs.org/user-guide/configuration/
+site_name: BrightWebApp
+repo_url: https://github.com/brightway-lca/brightwebapp
+copyright: © Paul Scherrer Institute (PSI) and Contributors | Code under MIT License
+nav: 
+  - Home: 'index.md'
+  - About: 'about.md'
+  - Getting Started:
+    - Use (Local): 'use.md'
+    - Use (API): 'api.md'
+  - API Reference (Public):
+    - Scope Splitting: 'api/scope.md'
+  - FAQ: 'faq.md'
+  - Changelog: 'changelog.md'
+theme: # https://www.mkdocs.org/user-guide/choosing-your-theme/#readthedocs
+  name: material
+  #custom_dir: docs/_overrides
+  logo: _static/logos/brightwebapp_logo.svg
+  favicon: _static/logos/brightwebapp_logo.svg
+  highlightjs: true
+  navigation_depth: 4
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.expand
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - content.footnote.tooltips
+plugins:
+  - search
+  - mkdocstrings: # https://mkdocstrings.github.io/python/usage/
+      handlers:
+        python:
+          options:
+            docstring_style: numpy
+            show_root_toc_entry: True
+            show_root_heading: true
+            heading_level: 2
+            show_source: true
+            filters: []
+  - markdown-exec
+  - autorefs
+  - include-markdown
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.snippets
+  - pymdownx.highlight:
+      use_pygments: false
+
+extra_javascript:
+  - _javascripts/katex.js
+  # https://cdnjs.com/libraries/KaTeX
+  # unpkg is incredibly slow (17s to load the css file)
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js
+extra_css:
+  # https://cdnjs.com/libraries/KaTeX
+  # unpkg is incredibly slow (17s to load the css file)
+  - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css
+  - _css/extra.css
+
+watch:
+  - brightwebapp
+
+extra:
+  generator: false
