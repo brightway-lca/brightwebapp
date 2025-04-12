@@ -5,6 +5,9 @@ copyright: © Paul Scherrer Institute (PSI) and Contributors | Code under MIT Li
 nav: 
   - Home: 'index.md'
   - About: 'about.md'
+  - Theory:
+    - Scopes: 'theory/scopes.md'
+    - Supply Chain: 'theory/supplychain.md'
   - Getting Started:
     - Use (Local): 'use.md'
     - Use (API): 'api.md'
@@ -15,8 +18,8 @@ nav:
 theme: # https://www.mkdocs.org/user-guide/choosing-your-theme/#readthedocs
   name: material
   #custom_dir: docs/_overrides
-  logo: _static/logos/brightwebapp_logo.svg
-  favicon: _static/logos/brightwebapp_logo.svg
+  logo: _logos/brightwebapp_logo.svg
+  favicon: _logos/brightwebapp_logo.svg
   highlightjs: true
   navigation_depth: 4
   features:

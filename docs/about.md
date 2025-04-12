@@ -8,7 +8,7 @@ The `EcoGraph` package was written by [Michael Weinold](https://www.linkedin.com
 
 Funding was provided by the [Swiss Innovation Agency Innosuisse](https://innosuisse.admin.ch) through the ["WISER" Flagship Project](https://wiser-climate.com) (PFFS-21-72). Michael Weinold gratefully acknowledges the support of the [Swiss Study Foundation](https://www.studyfoundation.ch).
 
-![PSI ETHZ WISER Logo](_static/logos/logo_black_PSI_ETHZ_WISER.svg)
+![PSI ETHZ WISER Logo](_logos/logo_black_PSI_ETHZ_WISER.svg)
 
 ## License
 
