@@ -9,7 +9,9 @@ nav:
     - Scopes: 'theory/scopes.md'
     - Supply Chain: 'theory/supplychain.md'
   - API Reference (Local):
-    - Graph Traversal: 'api/traversal.md'
+    - Main: 'api/main.md'
+    - Supply Chain Traversal: 'api/traversal.md'
+    - Supply Chain Modifications: 'api/modifications.md'
   - API Reference (API):
     - Scope Splitting: 'api/scope.md'
   - FAQ: 'faq.md'
