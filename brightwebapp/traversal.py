@@ -1,4 +1,3 @@
-# %%
 import pandas as pd
 
 
@@ -199,5 +198,3 @@ def _add_branch_information_to_edges_dataframe(df: pd.DataFrame) -> pd.DataFrame
         })
 
     return pd.DataFrame(branches)
-
-
