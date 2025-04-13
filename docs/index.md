@@ -2,14 +2,23 @@
 
 `BrightWebApp` is a Python package designed to showcase how [the Brightway software framework](https://docs.brightway.dev/en/latest/) can be adapted to provide complex life-cycle assessment calculations in the context of web applications. It is designed to be used either through a [Pyodide](https://pyodide.org/en/stable/) ([WebAssembly](https://www.google.com/search?client=safari&rls=en&q=webassembly&ie=UTF-8&oe=UTF-8)) enabled [Panel](https://panel.holoviz.org) dashboard, or by accessing it running in a Docker container.
 
-<p align="center">
-    <img src="_media/scope_splitting.svg" width="600">
-</p>
+```mermaid
+flowchart LR
+    4 -->|"(...)"| 3 -->|0.1→<b>0.2</b>| 2 -->|"=0.4*(0.5/0.25)"| 1 -->|0.5→<b>0.25</b>| 0
+    6 -->|"=0.7*(0.5/0.25)"| 5 -->|"=0.2*(0.5/0.25)"| 1
+    8 -->|"(...)"| 7 -->|0.05→<b>0.15</b>| 2
 
-**Diagram of the example use-case implemented in the `BrightWebApp` package.** _Here, every numbered circle represents a production node in the supply chain graph of automotive manufacturing. The supply chain can be split into different levels of "depth". Every node can be assigned to one of three "emission scopes", as defined by the Greenhouse Gas Protocol accounting standard:_ 
+    style 0 fill:#FFCCCB
+    style 1 fill:#33CAFF
+    style 2 fill:#33CAFF
+    style 3 fill:#A2A2A2
+    style 4 fill:#A2A2A2
+    style 5 fill:#33CAFF
+    style 6 fill:#33CAFF
+    style 7 fill:#A2A2A2
+    style 8 fill:#A2A2A2
+```
 
-> **Scope 1: Direct GHG emissions.** These are from sources that are owned or controlled by the company, for example, emissions from combustion in owned or controlled boilers, furnaces, vehicles, etc.  
-> **Scope 2: Electricity indirect GHG emissions.** These are from the generation of purchased electricity consumed by the company. Scope 2 emissions physically occur at the facility where electricity is generated.  
-> **Scope 3: Other indirect GHG emissions.** All other indirect emissions.
+**Illustration of a supply chain graph, as it would appear in the context of life-cycle assessment**.
 
-[Adapted from chapter 4, P.25 in "The Greenhouse Gas Protocol, A Corporate Accounting and Reporting Standard" (Revised Edition, 2004)](https://ghgprotocol.org/sites/default/files/standards/ghg-protocol-revised.pdf)
+As a use-case, it implements a simple logic for modifying branches of a supply chain based user input. This allows practitioners to modify either the amount of flow between production processes or the environmental burden intensity of individual processes.

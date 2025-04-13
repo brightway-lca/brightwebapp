@@ -37,9 +37,9 @@ dependencies = [
 ]
 
 [project.urls]
-source = "https://github.com/sustainableaviation/jetfuelburn"
-homepage = "https://jetfuelburn.readthedocs.io"
-tracker = "https://github.com/sustainableaviation/jetfuelburn/issues"
+source = "https://github.com/brightway-lca/brightwebapp"
+homepage = "https://brightwebapp.readthedocs.io"
+tracker = "https://github.com/brightway-lca/brightwebapp/issues"
 
 [project.optional-dependencies]
 # Getting recursive dependencies to work is a pain, this
@@ -53,10 +53,11 @@ testing = [
 [tool.setuptools]
 include-package-data = true
 packages = [
-  "jetfuelburn",
+  "brightwebapp",
 ]
 
 [tool.setuptools.package-data]
+"brightwebapp" = ["tests/fixtures/files/*.xlsx"]
 
 [tool.setuptools.dynamic]
 version = {attr = "brightwebapp.__version__"} 

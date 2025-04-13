@@ -5,18 +5,23 @@ copyright: © Paul Scherrer Institute (PSI) and Contributors | Code under MIT Li
 nav: 
   - Home: 'index.md'
   - About: 'about.md'
-  - Getting Started:
-    - Use (Local): 'use.md'
-    - Use (API): 'api.md'
-  - API Reference (Public):
+  - Theory:
+    - Emission Scopes: 'theory/scopes.md'
+    - Supply Chain: 'theory/supplychain.md'
+  - API Reference (Local):
+    - Main: 'api/main.md'
+    - Supply Chain Traversal: 'api/traversal.md'
+    - Supply Chain Modifications: 'api/modifications.md'
+    - Utility: 'api/utility.md'
+  - API Reference (API):
     - Scope Splitting: 'api/scope.md'
   - FAQ: 'faq.md'
   - Changelog: 'changelog.md'
 theme: # https://www.mkdocs.org/user-guide/choosing-your-theme/#readthedocs
   name: material
   #custom_dir: docs/_overrides
-  logo: _static/logos/brightwebapp_logo.svg
-  favicon: _static/logos/brightwebapp_logo.svg
+  logo: _logos/brightwebapp_logo.svg
+  favicon: _logos/brightwebapp_logo.svg
   highlightjs: true
   navigation_depth: 4
   features:
@@ -44,7 +49,11 @@ plugins:
   - include-markdown
 markdown_extensions:
   - admonition
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - toc:
       permalink: true
   - pymdownx.arithmatex:
