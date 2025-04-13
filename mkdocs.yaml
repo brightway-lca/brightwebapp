@@ -8,10 +8,9 @@ nav:
   - Theory:
     - Scopes: 'theory/scopes.md'
     - Supply Chain: 'theory/supplychain.md'
-  - Getting Started:
-    - Use (Local): 'use.md'
-    - Use (API): 'api.md'
-  - API Reference (Public):
+  - API Reference (Local):
+    - Graph Traversal: 'api/traversal.md'
+  - API Reference (API):
     - Scope Splitting: 'api/scope.md'
   - FAQ: 'faq.md'
   - Changelog: 'changelog.md'
@@ -47,7 +46,11 @@ plugins:
   - include-markdown
 markdown_extensions:
   - admonition
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - toc:
       permalink: true
   - pymdownx.arithmatex:
