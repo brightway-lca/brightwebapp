@@ -1,5 +1,7 @@
 # BrightWebApp
 
+[:simple-webassembly: Open Browser-based interactive WebAssembly Application (may load slowly) ](https://webapp.brightway.dev){ .md-button }
+
 `BrightWebApp` is a Python package designed to showcase how [the Brightway software framework](https://docs.brightway.dev/en/latest/) can be adapted to provide complex life-cycle assessment calculations in the context of web applications. It is designed to be used either through a [Pyodide](https://pyodide.org/en/stable/) ([WebAssembly](https://www.google.com/search?client=safari&rls=en&q=webassembly&ie=UTF-8&oe=UTF-8)) enabled [Panel](https://panel.holoviz.org) dashboard, or by accessing it running in a Docker container.
 
 ```mermaid
