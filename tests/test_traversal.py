@@ -1,21 +1,46 @@
 import pytest
+import bw2data as bd
 import pandas as pd
 from pandas.testing import assert_frame_equal
+from bw_graph_tools.graph_traversal.graph_objects import Node
+
+from tests.fixtures.supplychain import (
+    example_system_bike_production
+)
+
 
 from brightwebapp.traversal import (
+    _traverse_graph,
     _nodes_dict_to_dataframe,
     _edges_dict_to_dataframe,
     _trace_branch_from_last_node,
     _add_branch_information_to_edges_dataframe,
 )
 
+def test_traverse_graph():
+    example_system_bike_production()
+    traversal = _traverse_graph(
+        demand={bd.get_node(code='bike'): 1},
+        method=('IPCC', ),
+        cutoff=0.01,
+        biosphere_cutoff=0.01,
+        max_calc=100,
+    )
+    assert isinstance(traversal, dict)
+    assert 'nodes' in traversal
+    assert 'edges' in traversal
+    assert len(traversal['nodes']) == 4
+    assert len(traversal['edges']) == 3
+    return traversal
+
+
 def test_nodes_dict_to_dataframe():
-    dict_nodes = {
-        -1: Node(unique_id=-1, activity_datapackage_id=-1, activity_index=-1, reference_product_datapackage_id=-1, reference_product_index=-1, reference_product_production_amount=1.0, depth=0, supply_amount=1.0, cumulative_score=1374.6606234406681, direct_emissions_score=0.0, max_depth=None, direct_emissions_score_outside_specific_flows=0.0, remaining_cumulative_score_outside_specific_flows=0.0, terminal=False),
-        0: Node(unique_id=0, activity_datapackage_id=190005058932379648, activity_index=0, reference_product_datapackage_id=190005058932379648, reference_product_index=0, reference_product_production_amount=1.0, depth=1, supply_amount=1.0, cumulative_score=1374.6606234406681, direct_emissions_score=0.0, max_depth=None, direct_emissions_score_outside_specific_flows=0.0, remaining_cumulative_score_outside_specific_flows=1374.6606234406681, terminal=False),
-        1: Node(unique_id=1, activity_datapackage_id=190005058949156864, activity_index=1, reference_product_datapackage_id=190005058949156864, reference_product_index=1, reference_product_production_amount=1.0, depth=2, supply_amount=15.5, cumulative_score=1374.6606234406681, direct_emissions_score=412.30000591278076, max_depth=None, direct_emissions_score_outside_specific_flows=0.0, remaining_cumulative_score_outside_specific_flows=962.3606175278874, terminal=False),
-        2: Node(unique_id=2, activity_datapackage_id=190005058961739776, activity_index=2, reference_product_datapackage_id=190005058961739776, reference_product_index=2, reference_product_production_amount=1.0, depth=3, supply_amount=85.25, cumulative_score=962.3606175278871, direct_emissions_score=954.7999837398529, max_depth=None, direct_emissions_score_outside_specific_flows=0.0, remaining_cumulative_score_outside_specific_flows=7.560633788034238, terminal=True)
-    }
+    traversal = test_traverse_graph()
+    nodes = traversal['nodes']
+    df = _nodes_dict_to_dataframe(nodes)
+    assert df.iloc[0]['Scope'] == 1
+    assert df.iloc[0]['Name'] == 'bike production'
+    
 
 def test_add_branch_information_to_edges_dataframe():
     """

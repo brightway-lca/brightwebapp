@@ -2,6 +2,7 @@
 import pandas as pd
 import bw_graph_tools as bgt
 import bw2calc as bc
+import bw2data as bd
 
 def _traverse_graph(
     demand: dict,
@@ -16,9 +17,13 @@ def _traverse_graph(
     This function uses the new (v0.5) API of `bw_graph_tools` to perform a graph traversal:  
     `NewNodeEachVisitGraphTraversal(lca, settings)` and `traverse()` instead of `NewNodeEachVisitGraphTraversal(lca, cutoff)` and `.calculate()`.
     """
-    lca = bc.LCA(
+    my_functional_unit, data_objs, _ = bd.prepare_lca_inputs(
         demand=demand,
-        method=method,
+        method=method
+    )
+    lca = bc.LCA(
+        demand=my_functional_unit,
+        data_objs=data_objs,
     )
     lca.lci()
     lca.lcia()
