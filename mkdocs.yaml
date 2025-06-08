@@ -5,17 +5,9 @@ copyright: © Paul Scherrer Institute (PSI) and Contributors | Code under MIT Li
 nav: 
   - Home: 'index.md'
   - About: 'about.md'
-  - Theory:
-    - Emission Scopes: 'theory/scopes.md'
-    - Supply Chain: 'theory/supplychain.md'
-  - API Reference (Local):
-    - Main: 'api/main.md'
-    - Supply Chain Traversal: 'api/traversal.md'
-    - Supply Chain Modifications: 'api/modifications.md'
-    - Utility: 'api/utility.md'
-  - API Reference (API):
-    - Scope Splitting: 'api/scope.md'
   - FAQ: 'faq.md'
+  - API:
+      - Tests: 'api/tests.md'
   - Changelog: 'changelog.md'
 theme: # https://www.mkdocs.org/user-guide/choosing-your-theme/#readthedocs
   name: material

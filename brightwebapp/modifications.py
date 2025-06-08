@@ -7,7 +7,7 @@ def _update_burden_intensity_based_on_user_data(df: pd.DataFrame) -> pd.DataFram
     updates the `BurdenIntensity` of all nodes with user-defined `BurdenIntensity_USER`. 
 
     For instance, given a DataFrame of the kind:
-
+    
     | UID | BurdenIntensity | BurdenIntensity_USER |
     |-----|-----------------|----------------------|
     | 0   | 0.1             | NaN                  |
