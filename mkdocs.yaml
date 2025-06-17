@@ -7,9 +7,9 @@ nav:
   - About: 'about.md'
   - FAQ: 'faq.md'
   - API:
-    - Main: 'api/main.md'
     - Traversal: 'api/traversal.md'
-    - 'Brightway': 'api/brightway.md'
+    - Supplychain Modifications: 'api/supplychainmods.md'
+    - Brightway: 'api/brightway.md'
     - Tests: 'api/tests.md'
   - Changelog: 'changelog.md'
 theme: # https://www.mkdocs.org/user-guide/choosing-your-theme/#readthedocs

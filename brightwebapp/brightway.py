@@ -58,9 +58,9 @@ def load_and_set_useeio_project() -> None:
     """
     if 'USEEIO-1.1' not in bd.projects:
         bi.install_project(
-        project_key="useeio-v1.1",
-        project_name="USEEIO v1.1 Data",
-        projects_config={"useeio-v1.1": "USEEIOv1.1.tar.gz"},
+        project_key="USEEIO-1.1",
+        project_name="USEEIO-1.1",
+        projects_config={"USEEIO-1.1": "USEEIOv1.1.tar.gz"},
         url="https://zenodo.org/records/15685370/files/",
         overwrite_existing=True
     )
