@@ -53,11 +53,17 @@ def load_and_set_useeio_project() -> None:
     However, this function loads it from a Zenodo repository, which is more reliable and has guaranteed uptime:
 
     ```
-    https://zenodo.org/records/15685370/files/USEEIOv1.1.tar.gz?download=1
+    https://zenodo.org/records/15685370/files/USEEIOv1.1.tar.gz
     ```
     """
     if 'USEEIO-1.1' not in bd.projects:
-        bi.install_project(project_key="USEEIO-1.1", overwrite_existing=True)
+        bi.install_project(
+        project_key="useeio-v1.1",
+        project_name="USEEIO v1.1 Data",
+        projects_config={"useeio-v1.1": "USEEIOv1.1.tar.gz"},
+        url="https://zenodo.org/records/15685370/files/",
+        overwrite_existing=True
+    )
     else:
         pass
     bd.projects.set_current(name='USEEIO-1.1')
