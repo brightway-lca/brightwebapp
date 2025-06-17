@@ -6,7 +6,6 @@ from brightwebapp.traversal import (
 )
 
 
-
 # IMPLEMENT AND UNIT-TEST THIS!
 def perform_graph_traversal(
     demand: dict,
