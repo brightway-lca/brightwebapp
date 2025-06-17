@@ -2,12 +2,20 @@
 import bw2data as bd
 
 
-def example_system_bike_production():
+def example_system_bike_production() -> None:
     """
-    Sets up a simple supply chain graph in a Brightway project for testing purposes.
-    Includes a bike production node, steel production node, electricity production node,
-    and a biosphere node for Carbon Dioxide emissions:
+    Sets up a simple supply chain graph in a Brightway project for testing purposes.  
+    
+    Includes a `bike` production node, `steel` production node, `electricity` production node,
+    and a biosphere node for Carbon Dioxide emissions. 
+    Also implements a simple `IPCC` impact assessment method for Carbon Dioxide emissions.
 
+    Notes
+    -----
+    Nodes are [_chimera nodes_](https://docs.brightway.dev/en/latest/content/overview/inventory.html#processes-products-and-something-in-between). 
+
+    Supply Chain Graph
+    -----
     ```mermaid
     graph TD
     subgraph Technosphere
@@ -29,7 +37,10 @@ def example_system_bike_production():
     style D fill:#ffcccc,stroke:#333,stroke-width:2px
     ```
 
-    Also implements a simple `IPCC` impact assessment method for Carbon Dioxide emissions.
+    Warning
+    -------
+    Does not return anything, but sets up a Brightway project named "fixture"
+    containing the supply chain graph.
 
     See Also
     --------

@@ -12,10 +12,52 @@ def _traverse_graph(
     max_calc: int,
 ) -> dict:
     """
+    Conducts a graph traversal of a life-cycle assessment calculation
+    using the `bw_graph_tools` library.
+
     Warnings
     --------
     This function uses the new (v0.5) API of `bw_graph_tools` to perform a graph traversal:  
     `NewNodeEachVisitGraphTraversal(lca, settings)` and `traverse()` instead of `NewNodeEachVisitGraphTraversal(lca, cutoff)` and `.calculate()`.
+
+    See Also
+    --------
+    [`bw_graph_tools.graph_traversal.new_node_each_visit.NewNodeEachVisitGraphTraversal`](https://docs.brightway.dev/projects/graphtools/en/latest/content/api/bw_graph_tools/graph_traversal/new_node_each_visit/index.html#bw_graph_tools.graph_traversal.new_node_each_visit.NewNodeEachVisitGraphTraversal)
+
+    Parameters
+    ----------
+    demand : dict
+        A dictionary representing the demand for the life-cycle assessment.
+        Keys are `bw2data` nodes (activities) and the values are the amounts
+        of those activities to be produced or consumed.
+        Of the form:  
+        ```python
+        {bd.get_node(code='bike'): 1}
+        ```
+    method : tuple
+        A tuple representing the method to be used for the life-cycle assessment.
+        Of the form:  
+        ```python
+        ('Impact Potential', 'GCC')
+        ```
+    cutoff : float
+        A float representing the cutoff threshold for the graph traversal.
+    biosphere_cutoff : float
+        A float representing the biosphere cutoff threshold for the graph traversal.
+    max_calc : int
+        An integer representing the maximum number of calculations to be performed during the graph traversal.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the nodes and edges of the graph traversal.  
+        Of the form:  
+        ```python
+        {
+            'nodes': dict,  # Dictionary of Node objects
+            'edges': list   # List of Edge objects
+        }
+        ```
     """
     my_functional_unit, data_objs, _ = bd.prepare_lca_inputs(
         demand=demand,
@@ -46,20 +88,79 @@ def _nodes_dict_to_dataframe(
     nodes: dict,
 ) -> pd.DataFrame:
     """
-    Returns a dataframe with human-readable descriptions and emissions values of the nodes in the graph traversal.
+    Returns a [Pandas DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html)
+    with human-readable descriptions and emissions values of the nodes in the graph traversal.
+    Every node in the graph traversal is represented by a row in the DataFrame.
+
+    See Also
+    --------
+    [`bw_graph_tools.graph_traversal.new_node_each_visit.NewNodeEachVisitGraphTraversal`](https://docs.brightway.dev/projects/graphtools/en/latest/content/api/bw_graph)  
+    [`brightwebapp.traversal._traverse_graph`][]  
+    [`brightwebapp.traversal._edges_dict_to_dataframe`][]
 
     Parameters
     ----------
     nodes : dict
-        A dictionary of nodes in the graph traversal.
-        Can be created by selecting the 'nodes' key from the dictionary
-        returned by the function `bw_graph_tools.NewNodeEachVisitGraphTraversal.calculate()`.
+        A dictionary of nodes in the graph traversal.  
+        Of the form:  
+        ```python
+        {
+        -1: Node(
+            unique_id=-1,
+            activity_datapackage_id=-1,
+            activity_index=-1,
+            reference_product_datapackage_id=-1,
+            reference_product_index=-1,
+            reference_product_production_amount=1.0,
+            depth=0,
+            supply_amount=1.0,
+            cumulative_score=37.68834121437976,
+            direct_emissions_score=0.0,
+            max_depth=None,
+            direct_emissions_score_outside_specific_flows=0.0,
+            remaining_cumulative_score_outside_specific_flows=0.0,
+            terminal=False
+        ),
+        0: Node(
+            unique_id=0,
+            activity_datapackage_id=235,
+            activity_index=234,
+            reference_product_datapackage_id=542,
+            reference_product_index=153,
+            reference_product_production_amount=0.9988390803337097,
+            depth=1,
+            supply_amount=100.11622689671918,
+            cumulative_score=37.68834121437975,
+            direct_emissions_score=1.5464815391143154,
+            max_depth=None,
+            direct_emissions_score_outside_specific_flows=0.7561131308224808,
+            remaining_cumulative_score_outside_specific_flows=36.897972806087914,
+            terminal=False
+        ),
+        (...)
+        }
+        ```
 
     Returns
     -------
     pd.DataFrame
-        A dataframe with human-readable descriptions and emissions values of the nodes in the graph traversal.
+        A dataframe with human-readable descriptions and emissions values of the nodes in the graph traversal.  
+        Of the form:  
+
+        | `UID` | `Scope` | `Name` | `SupplyAmount` | (...) |
+        |-------|---------|--------|----------------|-------|
+        | (...) | (...)   | (...)  | (...)          | (...) |
+
+    Raises
+    ------
+    TypeError
+        If `nodes` is not a dictionary.
     """
+    if not isinstance(nodes, dict):
+        raise TypeError(
+            f"Expected 'nodes' to be a dict, but got {type(nodes)}."
+        )
+
     list_of_row_dicts = []
 
     for node in nodes.values():
@@ -88,8 +189,64 @@ def _nodes_dict_to_dataframe(
 
 def _edges_dict_to_dataframe(edges: list) -> pd.DataFrame:
     """
-    To be added...
+    Returns a [Pandas DataFrame](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html)
+    with the edges of the graph traversal.
+    Every node in the graph traversal is represented by a row in the DataFrame.
+
+    See Also
+    --------
+    [`bw_graph_tools.graph_traversal.new_node_each_visit.NewNodeEachVisitGraphTraversal`](https://docs.brightway.dev/projects/graphtools/en/latest/content/api/bw_graph_tools/graph_traversal/new_node_each_visit/index.html#bw_graph_tools.graph_traversal.new_node_each_visit.NewNodeEachVisitGraphTraversal)  
+    [`brightwebapp.traversal._traverse_graph`][]  
+    [`brightwebapp.traversal._nodes_dict_to_dataframe`][]
+
+    Parameters
+    ----------
+    edges : list
+        A list of edges in the graph traversal.  
+        Of the form:  
+        ```python
+        [
+            Edge(
+                consumer_index=-1,
+                consumer_unique_id=-1,
+                producer_index=234,
+                producer_unique_id=0,
+                product_index=153,
+                amount=100.0
+            ),
+            Edge(
+                consumer_index=234,
+                consumer_unique_id=0,
+                producer_index=78,
+                producer_unique_id=1,
+                product_index=42,
+                amount=1.2520303865276814
+            ),
+            (...)
+        ]
+        ```
+
+    Returns
+    -------
+    pd.DataFrame
+        A dataframe with the edges of the graph traversal.  
+        Of the form:  
+
+        | `consumer_unique_id` | `producer_unique_id` |
+        |----------------------|----------------------|
+        | -1                   | 0                    |
+        | 0                    | 1                    |
+        | (...)                | (...)                |
+
+    Raises
+    ------
+    TypeError
+        If `edges` is not a list.
     """
+    if not isinstance(edges, list):
+        raise TypeError(
+            f"Expected 'edges' to be a list, but got {type(edges)}."
+        )
     if len(edges) < 2:
         return pd.DataFrame()
     else:
@@ -137,6 +294,10 @@ def _trace_branch_from_last_node(
     | 5                    | 6                    | # 6 is terminal producer node of this branch |
 
     For `unique_id_last_node = 6`, the function returns `[0, 3, 5, 6]`.
+
+    See Also
+    --------
+    [`brightwebapp.traversal._add_branch_information_to_edges_dataframe`][]
 
     Example
     -------
@@ -219,6 +380,10 @@ def _add_branch_information_to_edges_dataframe(df: pd.DataFrame) -> pd.DataFrame
     | 3                    | 5                    | `[0, 3, 5]`    |
     | 5                    | 6                    | `[0, 3, 5, 6]` |
 
+    See Also
+    --------
+    [`brightwebapp.traversal._trace_branch_from_last_node`][]
+
     Parameters
     ----------
     df_edges : pd.DataFrame
@@ -245,18 +410,90 @@ def _add_branch_information_to_edges_dataframe(df: pd.DataFrame) -> pd.DataFrame
     return pd.DataFrame(branches)
 
 
-    def perform_graph_traversal(self, event):
-        widget_cutoff_indicator_statictext.value = self.graph_traversal_cutoff * 100
-        self.graph_traversal: dict = bgt.NewNodeEachVisitGraphTraversal.calculate(self.lca, cutoff=self.graph_traversal_cutoff)
-        self.df_graph_traversal_nodes: pd.DataFrame = nodes_dict_to_dataframe(self.graph_traversal['nodes'])
-        self.df_graph_traversal_edges: pd.DataFrame = edges_dict_to_dataframe(self.graph_traversal['edges'])
-        if self.df_graph_traversal_edges.empty:
-            return
-        else:
-            self.df_graph_traversal_edges = add_branch_information_to_edges_dataframe(self.df_graph_traversal_edges)
-            self.df_tabulator_from_traversal = pd.merge(
-                self.df_graph_traversal_nodes,
-                self.df_graph_traversal_edges,
-                left_on='UID',
-                right_on='producer_unique_id',
-                how='left')
+def perform_graph_traversal(
+    demand: dict,
+    method: tuple,
+    cutoff: float,
+    biosphere_cutoff: float,
+    max_calc: int,
+) -> pd.DataFrame:
+    """
+    Performs a graph traversal of a life-cycle assessment calculation
+    and returns a DataFrame with the nodes and edges of the graph traversal.
+
+    See Also
+    --------
+    [`bw_graph_tools`](https://docs.brightway.dev/projects/graphtools/en/latest/content/api/bw_graph_tools/index.html)
+
+    Parameters
+    ----------
+    demand : dict
+        A dictionary representing the demand for the life-cycle assessment.
+        Keys are `bw2data` nodes (activities) and the values are the amounts
+        of those activities to be produced or consumed.  
+        Of the form:
+        ```python
+        {bd.get_node(code='bike'): 1}
+        ```
+    method : tuple
+        A tuple representing the method to be used for the life-cycle assessment.
+        Of the form:
+        ```python
+        ('Impact Potential', 'GCC')
+        ```
+    cutoff : float
+        A float representing the cutoff threshold for the graph traversal.
+        This is used to limit the depth of the traversal and the amount of data processed.
+    biosphere_cutoff : float
+        A float representing the biosphere cutoff threshold for the graph traversal.
+        This is used to limit the amount of biosphere data processed.
+    max_calc : int
+        An integer representing the maximum number of calculations to be performed during the graph traversal.
+        This is used to limit the amount of data processed and the depth of the traversal.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with the nodes and edges of the graph traversal.  
+        The DataFrame contains the following columns:  
+
+        - `UID`: Unique identifier of the node
+        - `Scope`: Scope of the node (1 for functional unit, 3 for other nodes)
+        - `Name`: Name of the node
+        - `SupplyAmount`: Supply amount of the node
+        - `BurdenIntensity`: Burden intensity of the node
+        - `Burden(Direct)`: Direct burden of the node
+        - `Depth`: Depth of the node in the graph
+        - `Branch`: A list of unique identifiers of the nodes in the branch leading to the terminal producer node
+
+    Raises
+    ------
+    ValueError
+        _description_
+    """
+    traversal: dict = _traverse_graph(
+        demand=demand,
+        method=method,
+        cutoff=cutoff,
+        biosphere_cutoff=biosphere_cutoff,
+        max_calc=max_calc,
+    )
+    df_graph_traversal_nodes: pd.DataFrame = _nodes_dict_to_dataframe(traversal['nodes'])
+    df_graph_traversal_edges: pd.DataFrame = _edges_dict_to_dataframe(traversal['edges'])
+    if df_graph_traversal_edges.empty:
+        raise ValueError(
+            "No edges found in the graph traversal. "
+            "This may be due to a cutoff value that is too high, "
+            "or a demand that does not lead to any edges."
+        )
+    else:
+        df_graph_traversal_edges = _add_branch_information_to_edges_dataframe(df_graph_traversal_edges)
+        df_traversal = pd.merge(
+            df_graph_traversal_nodes,
+            df_graph_traversal_edges,
+            left_on='UID',
+            right_on='producer_unique_id',
+            how='left'
+        )
+    df_traversal = df_traversal.drop(columns=['producer_unique_id', 'activity_datapackage_id'])
+    return df_traversal

@@ -7,7 +7,9 @@ nav:
   - About: 'about.md'
   - FAQ: 'faq.md'
   - API:
+    - Main: 'api/main.md'
     - Traversal: 'api/traversal.md'
+    - 'Brightway': 'api/brightway.md'
     - Tests: 'api/tests.md'
   - Changelog: 'changelog.md'
 theme: # https://www.mkdocs.org/user-guide/choosing-your-theme/#readthedocs
@@ -25,6 +27,15 @@ theme: # https://www.mkdocs.org/user-guide/choosing-your-theme/#readthedocs
     - navigation.indexes
     - navigation.top
     - content.footnote.tooltips
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/brightness-7 
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
 plugins:
   - search
   - mkdocstrings: # https://mkdocstrings.github.io/python/usage/

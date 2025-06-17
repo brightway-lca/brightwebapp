@@ -1,12 +1,13 @@
 import bw_graph_tools as bgt
-import bw2calc
 from brightwebapp.traversal import (
-    nodes_dict_to_dataframe,
-    edges_dict_to_dataframe,
+    _traverse_graph,
+    _nodes_dict_to_dataframe,
+    _edges_dict_to_dataframe,
+    _trace_branch_from_last_node,
+    _add_branch_information_to_edges_dataframe
+
 )
 
-
-# IMPLEMENT AND UNIT-TEST THIS!
 def perform_graph_traversal(
     demand: dict,
     method: tuple,

@@ -17,7 +17,16 @@ from brightwebapp.traversal import (
     _add_branch_information_to_edges_dataframe,
 )
 
-def test_traverse_graph():
+def test_traverse_graph() -> dict:
+    """
+    Test the `_traverse_graph` function
+    to ensure it correctly traverses a simple supply chain graph.
+
+    Returns
+    -------
+    dict
+        `bw_graph_tools.NewNodeEachVisitGraphTraversal` dictionary containing the nodes and edges of the graph traversal.
+    """
     example_system_bike_production()
     traversal = _traverse_graph(
         demand={bd.get_node(code='bike'): 1},
@@ -34,7 +43,11 @@ def test_traverse_graph():
     return traversal
 
 
-def test_nodes_dict_to_dataframe():
+def test_nodes_dict_to_dataframe() -> None:
+    """
+    Test the `_nodes_dict_to_dataframe` function to ensure it correctly converts
+    a dictionary of traversed nodes into a DataFrame with human-readable descriptions and emissions values.
+    """
     traversal = test_traverse_graph()
     nodes = traversal['nodes']
     df = _nodes_dict_to_dataframe(nodes)
