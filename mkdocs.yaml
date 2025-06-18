@@ -6,10 +6,14 @@ nav:
   - Home: 'index.md'
   - About: 'about.md'
   - FAQ: 'faq.md'
-  - API:
+  - Theory:
+    - Scopes: 'theory/scopes.md'
+  - API (Python):
     - Traversal: 'api/traversal.md'
     - Brightway: 'api/brightway.md'
     - Tests: 'api/tests.md'
+  - API (FastAPI):
+    - Endpoints: 'api/api.md'
   - Changelog: 'changelog.md'
 theme: # https://www.mkdocs.org/user-guide/choosing-your-theme/#readthedocs
   name: material
@@ -83,6 +87,7 @@ extra_css:
 
 watch:
   - brightwebapp
+  - api
 
 extra:
   generator: false

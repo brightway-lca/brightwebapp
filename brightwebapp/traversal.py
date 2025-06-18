@@ -386,7 +386,7 @@ def _add_branch_information_to_edges_dataframe(df: pd.DataFrame) -> pd.DataFrame
 
     Parameters
     ----------
-    df_edges : pd.DataFrame
+    df : pd.DataFrame
         A dataframe of graph edges.  
         Must contain integer-type columns `consumer_unique_id` and `producer_unique_id`.
 
