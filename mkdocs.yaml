@@ -7,8 +7,7 @@ nav:
   - About: 'about.md'
   - FAQ: 'faq.md'
   - API:
-    - Traversal: 'api/traversal.md'x
-    - Supplychain Modifications: 'api/supplychainmods.md'
+    - Traversal: 'api/traversal.md'
     - Brightway: 'api/brightway.md'
     - Tests: 'api/tests.md'
   - Changelog: 'changelog.md'

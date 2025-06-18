@@ -416,7 +416,8 @@ def perform_graph_traversal(
     cutoff: float,
     biosphere_cutoff: float,
     max_calc: int,
-) -> pd.DataFrame:
+    return_format: str = 'dataframe'
+) -> pd.DataFrame | str:
     """
     Performs a graph traversal of a life-cycle assessment calculation
     and returns a DataFrame with the nodes and edges of the graph traversal.
@@ -496,4 +497,7 @@ def perform_graph_traversal(
             how='left'
         )
     df_traversal = df_traversal.drop(columns=['producer_unique_id', 'activity_datapackage_id'])
-    return df_traversal
+    if return_format == 'dataframe':
+        return df_traversal
+    elif return_format == 'csv':
+        return df_traversal.to_csv(index=False)
