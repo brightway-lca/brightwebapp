@@ -100,12 +100,61 @@ class GraphTraversalRequest(BaseModel):
 )
 async def setup_useeio_database(background_tasks: BackgroundTasks):
     """
-    Schedules a background task to download and install the USEEIO-1.1
-    database if it is not already present.
+    Schedules the USEEIO database setup as a background task.
+
+    This endpoint initiates a long-running process to download and install
+    the USEEIO-1.1 database if it is not already present. To avoid
+    request timeouts, the task is scheduled to run in the background.
+    The API responds immediately with a task ID, which can be used to
+    poll a status endpoint for completion.
+
+    Parameters
+    ----------
+    background_tasks : BackgroundTasks
+        A FastAPI dependency that allows scheduling of background tasks.
+        The task is executed *after* the response has been sent. This is
+        injected by the framework and not provided by the API user.
+
+    Returns
+    -------
+    dict
+        A dictionary confirming that the task has been accepted for processing.
+        
+        | key            | value                                                                                     |
+        | -------------- | ----------------------------------------------------------------------------------------- |
+        | `status`       | `accepted`                                                                                |
+        | `message`      | "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."        |
+
+    Notes
+    -----
+    This function is exposed as a ``POST`` endpoint. It returns an HTTP
+    ``202 Accepted`` status code upon successfully scheduling the task.
+    This is a "fire-and-forget" operation. Once the task is scheduled,
+    the API provides no further status updates or results. To monitor the
+    actual progress of the download and installation, you may need to
+    check the application's server or container logs.
 
     See Also
     --------
     [`brightwebapp.brightway.load_and_set_useeio_project`][]
+
+    Example
+    -------
+    To trigger this endpoint, you can use a tool like ``curl``.
+
+    **Request:**
+
+    ```bash
+    curl -X POST http://localhost:8080/setup/useeio-database
+    ```
+    **Immediate Response (202 Accepted):**
+
+    ```json
+    {
+        "status": "accepted",
+        "message": "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."
+    }
+    ```
     """
     background_tasks.add_task(load_and_set_useeio_project)
     return {
@@ -117,12 +166,74 @@ async def setup_useeio_database(background_tasks: BackgroundTasks):
 @router.post("/traversal/perform", response_class=Response)
 async def run_graph_traversal(request: GraphTraversalRequest):
     """
-    Performs a graph traversal based on a detailed request body
-    and returns the resulting graph as a CSV file.
+    Performs a graph traversal and returns the result as a CSV file.
+
+    This endpoint serves as the primary calculation interface. It accepts a
+    detailed JSON object specifying the demand, method, and calculation
+    parameters. Upon success, it directly returns a CSV file for download.
+
+    Parameters
+    ----------
+    request : GraphTraversalRequest
+        A Pydantic model representing the structured request body. FastAPI
+        automatically validates the incoming JSON against this model. See the
+        documentation for the ``GraphTraversalRequest`` model for the exact
+        JSON structure required.
+
+    Returns
+    -------
+    fastapi.Response
+        On success, a streaming response containing the graph traversal data
+        as a CSV file. The HTTP ``Content-Disposition`` header is set to
+        'attachment', prompting a file download in browsers.
+
+    Raises
+    ------
+    HTTPException
+        - **400 Bad Request**: Raised if the underlying calculation function
+          returns a ``ValueError``. This can occur if, for example, the
+          cutoff value is too high and no graph edges are found. The response
+          body will contain the specific error message.
+        - **500 Internal Server Error**: Raised for any other unexpected
+          exception during processing, such as providing a demand ``code``
+          that does not exist in the Brightway database.
 
     See Also
     --------
     [`brightwebapp.traversal.perform_graph_traversal`][]
+
+    Example
+    -------
+    To trigger this endpoint, you must send a ``POST`` request with a JSON
+    body. The following ``curl`` command demonstrates this.
+
+    **Request:**
+
+    ```bash
+    curl -X POST http://localhost:8080/traversal/perform \\
+    -H "Content-Type: application/json" \\
+    -d '{
+            "demand": [
+            { "code": "some_valid_code", "amount": 1 }
+            ],
+            "method": ["IMPACT World+ Midpoint", "Climate change", "GWP100"],
+            "cutoff": 0.005,
+            "biosphere_cutoff": 1e-5,
+            "max_calc": 10000
+        }' \\
+    --output traversal_result.csv
+    ```
+    On success, the command will be silent and the output will be saved to
+    the file ``traversal_result.csv``.
+
+    **Example Error Response (400 Bad Request):**
+
+    ```json
+    {
+        "detail": "No edges found in the graph traversal. This may be due to a cutoff value that is too high, or a demand that does not lead to any edges."
+    }
+    ```
+       
     """
     try:
         demand_dict = {
