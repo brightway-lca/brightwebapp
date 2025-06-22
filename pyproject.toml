@@ -35,6 +35,11 @@ dependencies = [
   "bw2io==0.9.6",
   "bw2calc==2.0.1",
   "bw_graph_tools==0.5.0",
+  "plotly"
+]
+
+[project.optional-dependencies]
+api = [
   "fastapi",
   "uvicorn[standard]",
 ]

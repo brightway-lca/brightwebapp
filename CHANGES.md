@@ -1,5 +1,9 @@
 # `brightwebapp` Changelog
 
+## 0.0.3 (2025-06-22)
+
+- Made FastAPI and associated packages optional dependencies.
+
 ## 0.0.2 (2025-06-22)
 
 - Removed outdated test file and updated GitHub Actions publishing workflows.
