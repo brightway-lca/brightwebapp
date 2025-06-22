@@ -13,6 +13,7 @@ jobs:
   
   build:
     name: Build distribution 📦
+    needs: run-tests # publish only if tests pass
     runs-on: ubuntu-latest
 
     steps:
@@ -42,6 +43,7 @@ jobs:
       Publish Python 🐍 distribution 📦 to PyPI
     needs:
     - build
+    - run-tests 
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -64,6 +66,7 @@ jobs:
       and upload them to GitHub Release
     needs:
     - publish-to-pypi
+    - run-tests # Explicitly add run-tests here as well for clarity and robustness.
     runs-on: ubuntu-latest
 
     permissions:
