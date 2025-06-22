@@ -92,6 +92,11 @@ def _nodes_dict_to_dataframe(
     with human-readable descriptions and emissions values of the nodes in the graph traversal.
     Every node in the graph traversal is represented by a row in the DataFrame.
 
+    Warnings
+    --------
+    By default, only the node producing the functional unit is scope 1.
+    All other nodes are scope 3.
+
     See Also
     --------
     [`bw_graph_tools.graph_traversal.new_node_each_visit.NewNodeEachVisitGraphTraversal`](https://docs.brightway.dev/projects/graphtools/en/latest/content/api/bw_graph)  
@@ -416,7 +421,7 @@ def perform_graph_traversal(
     cutoff: float,
     biosphere_cutoff: float,
     max_calc: int,
-    return_format: str = 'dataframe'
+    return_format: str,
 ) -> pd.DataFrame | str:
     """
     Performs a graph traversal of a life-cycle assessment calculation

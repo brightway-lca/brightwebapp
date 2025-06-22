@@ -10,10 +10,13 @@ nav:
     - Scopes: 'theory/scopes.md'
   - API (Python):
     - Traversal: 'api/traversal.md'
+    - Modifications: 'api/modifications.md'
     - Brightway: 'api/brightway.md'
     - Tests: 'api/tests.md'
   - API (FastAPI):
     - Endpoints: 'api/api.md'
+  - Web Application:
+    - Development: 'webapp.md'
   - Changelog: 'changelog.md'
 theme: # https://www.mkdocs.org/user-guide/choosing-your-theme/#readthedocs
   name: material

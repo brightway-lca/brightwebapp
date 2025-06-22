@@ -2,7 +2,7 @@
 from typing import Optional
 import bw2data as bd
 import bw2io as bi
-
+import os
 
 def load_and_set_ecoinvent_project(
     username: Optional[str] = None,
@@ -67,3 +67,19 @@ def load_and_set_useeio_project() -> None:
     else:
         pass
     bd.projects.set_current(name='USEEIO-1.1')
+
+
+def brightway_wasm_database_storage_workaround() -> None:
+    """
+    Sets the Brightway project directory to `/tmp/.
+    
+    The JupyterLite file system currently does not support storage of SQL database files
+    in directories other than `/tmp/`. This function sets the Brightway environment variable
+    `BRIGHTWAY_DIR` to `/tmp/` to work around this limitation.
+    
+    See Also
+    --------
+    - [Brightway Documentation: "How do I change my Data Directory"?](https://docs.brightway.dev/en/latest/content/faq/data_management.html#how-do-i-change-my-data-directory)
+    - [Brightway Live Issue #10](https://github.com/brightway-lca/brightway-live/issues/10)
+    """
+    os.environ["BRIGHTWAY_DIR"] = "/tmp/"

@@ -1,462 +1,27 @@
+# Panel
 import panel as pn
 pn.extension(notifications=True)
 pn.extension(design='material')
 pn.extension('plotly')
 pn.extension('tabulator')
 
-# plotting
+# BrightWebApp
+from brightwebapp.brightway import (
+    load_and_set_useeio_project,
+    brightway_wasm_database_storage_workaround
+)
+from brightwebapp.traversal import perform_graph_traversal
+import bw2data as bd
+
+
+# Plotting
 import plotly
 
-# data science
+# Data Science
 import pandas as pd
-import numpy as np
 
-# system
-import os
 
-# brightway
-import bw_graph_tools as bgt
-import bw2io as bi
-import bw2data as bd
-import bw2calc as bc
-
-# type hints
-from bw2data.backends.proxies import Activity
-from bw_graph_tools.graph_traversal import Node
-from bw_graph_tools.graph_traversal import Edge
-
-
-def brightway_wasm_database_storage_workaround() -> None:
-    """
-    Sets the Brightway project directory to `/tmp/.
-    
-    The JupyterLite file system currently does not support storage of SQL database files
-    in directories other than `/tmp/`. This function sets the Brightway environment variable
-    `BRIGHTWAY_DIR` to `/tmp/` to work around this limitation.
-    
-    Notes
-    -----
-    - https://docs.brightway.dev/en/latest/content/faq/data_management.html#how-do-i-change-my-data-directory
-    - https://github.com/brightway-lca/brightway-live/issues/10
-    """
-    os.environ["BRIGHTWAY_DIR"] = "/tmp/"
-
-
-def check_for_useeio_brightway_project(event):
-    """
-    Checks if the USEEIO-1.1 Brightway project is installed.
-    If not, installs it. Shows Panel notifications for the user.
-
-    Returns
-    -------
-    SQLiteBackend
-        bw2data.backends.base.SQLiteBackend of the USEEIO-1.1 database
-    """
-    if 'USEEIO-1.1' not in bd.projects:
-        notification_load = pn.state.notifications.info('Loading USEEIO database...')
-        bi.install_project(project_key="USEEIO-1.1", overwrite_existing=True)
-        notification_load.destroy()
-        pn.state.notifications.success('USEEIO database loaded!', duration=7000)
-    else:
-        pn.state.notifications.success('USEEIO database already loaded!', duration=7000)
-        pass
-    bd.projects.set_current(name='USEEIO-1.1')
-
-
-def nodes_dict_to_dataframe(
-        nodes: dict,
-        uid_electricity: int = 53 # hardcoded for USEEIO
-    ) -> pd.DataFrame:
-    """
-    Returns a dataframe with human-readable descriptions and emissions values of the nodes in the graph traversal.
-
-    Parameters
-    ----------
-    nodes : dict
-        A dictionary of nodes in the graph traversal.
-        Can be created by selecting the 'nodes' key from the dictionary
-        returned by the function `bw_graph_tools.NewNodeEachVisitGraphTraversal.calculate()`.
-
-    Returns
-    -------
-    pd.DataFrame
-        A dataframe with human-readable descriptions and emissions values of the nodes in the graph traversal.
-    """
-    list_of_row_dicts = []
-    for current_node in nodes.values():
-
-        scope: int = 3
-        if current_node.unique_id == -1:
-            continue
-        elif current_node.unique_id == 0:
-            scope = 1
-        elif current_node.activity_datapackage_id == uid_electricity:
-            scope = 2
-        else:
-            pass
-        list_of_row_dicts.append(
-            {
-                'UID': current_node.unique_id,
-                'Scope': scope,
-                'Name': bd.get_node(id=current_node.activity_datapackage_id)['name'],
-                'SupplyAmount': current_node.supply_amount,
-                'BurdenIntensity': current_node.direct_emissions_score/current_node.supply_amount,
-                # 'Burden(Cumulative)': current_node.cumulative_score,
-                'Burden(Direct)': current_node.direct_emissions_score + current_node.direct_emissions_score_outside_specific_flows,
-                'Depth': current_node.depth,
-                'activity_datapackage_id': current_node.activity_datapackage_id,
-            }
-        )
-    return pd.DataFrame(list_of_row_dicts)
-
-
-def edges_dict_to_dataframe(edges: list) -> pd.DataFrame:
-    """
-    To be added...
-    """
-    if len(edges) < 2:
-        return pd.DataFrame()
-    else:
-        list_of_row_dicts = []
-        for current_edge in edges:
-            list_of_row_dicts.append(
-                {
-                    'consumer_unique_id': current_edge.consumer_unique_id,
-                    'producer_unique_id': current_edge.producer_unique_id
-                }
-            )
-        return pd.DataFrame(list_of_row_dicts).drop(0)
-
-
-def trace_branch(df: pd.DataFrame, start_node: int) -> list:
-    """
-    Given a dataframe of graph edges and a "starting node" (producer_unique_id), returns the branch of nodes that lead to the starting node.
-
-    For example:
-
-    | consumer_unique_id | producer_unique_id |
-    |--------------------|--------------------|
-    | 0                  | 1                  | # 1 is terminal producer node
-    | 0                  | 2                  |
-    | 0                  | 3                  |
-    | 2                  | 4                  | # 4 is terminal producer node
-    | 3                  | 5                  |
-    | 5                  | 6                  | # 6 is terminal producer node
-
-    For start_node = 6, the function returns [0, 3, 5, 6]
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Dataframe of graph edges. Must contain integer-type columns 'consumer_unique_id' and 'producer_unique_id'.
-    start_node : int
-        The integer indicating the producer_unique_id starting node to trace back from.
-
-    Returns
-    -------
-    list
-        A list of integers indicating the branch of nodes that lead to the starting node.
-    """
-
-    branch: list = [start_node]
-
-    while True:
-        previous_node: int = df[df['producer_unique_id'] == start_node]['consumer_unique_id']
-        if previous_node.empty:
-            break
-        start_node: int = previous_node.values[0]
-        branch.insert(0, start_node)
-
-    return branch
-
-
-def add_branch_information_to_edges_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Adds 'branch' information to terminal nodes in a dataframe of graph edges.
-
-    For example:
-
-    | consumer_unique_id | producer_unique_id |
-    |--------------------|--------------------|
-    | 0                  | 1                  | # 1 is terminal producer node
-    | 0                  | 2                  |
-    | 0                  | 3                  |
-    | 2                  | 4                  | # 4 is terminal producer node
-    | 3                  | 5                  |
-    | 5                  | 6                  | # 6 is terminal producer node
-
-    | consumer_unique_id | producer_unique_id | branch       |
-    |--------------------|--------------------|--------------|
-    | 0                  | 1                  | [0, 1]       |
-    | 0                  | 2                  | [0, 2]       |
-    | 0                  | 3                  | [0, 3]       |
-    | 2                  | 4                  | [0, 2, 4]    |
-    | 3                  | 5                  | [0, 3, 5]    |
-    | 5                  | 6                  | [0, 3, 5, 6] |
-
-    Parameters
-    ----------
-    df_edges : pd.DataFrame
-        A dataframe of graph edges.
-        Must contain integer-type columns 'consumer_unique_id' and 'producer_unique_id'.
-
-    Returns
-    -------
-    pd.DataFrame
-        A dataframe of graph nodes with a column 'branch' that contains the branch of nodes that lead to the terminal producer node.
-    """
-    # initialize empty list to store branches
-    branches: list = []
-
-    for _, row in df.iterrows():
-        branch: list = trace_branch(df, int(row['producer_unique_id']))
-        branches.append({
-            'producer_unique_id': int(row['producer_unique_id']),
-            'Branch': branch
-        })
-
-    return pd.DataFrame(branches)
-
-
-def create_user_input_columns(
-        df_original: pd.DataFrame,
-        df_user_input: pd.DataFrame,
-    ) -> pd.DataFrame:
-    """
-    Creates a new column in the 'original' DataFrame where only the
-    user-supplied values are kept. The other values are replaced by NaN.
-
-    For instance, given an "original" DataFrame of the kind:
-
-    | UID | SupplyAmount | BurdenIntensity |
-    |-----|--------------|-----------------|
-    | 0   | 1            | 0.1             |
-    | 1   | 0.5          | 0.5             |
-    | 2   | 0.2          | 0.3             |
-
-    and a "user input" DataFrame of the kind:
-
-    | UID | SupplyAmount | BurdenIntensity |
-    |-----|--------------|-----------------|
-    | 0   | 1            | 0.1             |
-    | 1   | 0            | 0.5             |
-    | 2   | 0.2          | 2.1             |
-
-    the function returns a DataFrame of the kind:
-
-    | UID | SupplyAmount | SupplyAmount_USER | BurdenIntensity | BurdenIntensity_USER |
-    |-----|--------------|-------------------|-----------------|----------------------|
-    | 0   | 1            | NaN               | 0.1             | NaN                  |
-    | 1   | 0.5          | 0                 | 0.5             | NaN                  |
-    | 2   | 0.2          | NaN               | 0.3             | 2.1                  |
-
-    Parameters
-    ----------
-    df_original : pd.DataFrame
-        Original DataFrame.
-
-    df_user_input : pd.DataFrame
-        User input DataFrame.
-    """
-    
-    df_merged = pd.merge(
-        df_original,
-        df_user_input[['UID', 'SupplyAmount', 'BurdenIntensity']],
-        on='UID',
-        how='left',
-        suffixes=('', '_USER')
-    )
-
-    for column_name in ['SupplyAmount', 'BurdenIntensity']:
-        df_merged[f'{column_name}_USER'] = np.where(
-            df_merged[f'{column_name}_USER'] != df_merged[f'{column_name}'],
-            df_merged[f'{column_name}_USER'],
-            np.nan
-        )
-
-    return df_merged
-
-
-def update_burden_intensity_based_on_user_data(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Updates the burden intensity when user data is provided.
-
-    For instance, given a DataFrame of the kind:
-
-    | UID | BurdenIntensity | BurdenIntensity_USER |
-    |-----|-----------------|----------------------|
-    | 0   | 0.1             | NaN                  |
-    | 1   | 0.5             | 0.25                 |
-    | 2   | 0.3             | NaN                  |
-
-    the function returns a DataFrame of the kind:
-
-    | UID | BurdenIntensity |
-    |-----|-----------------|
-    | 0   | 0.1             |
-    | 1   | 0.25            |
-    | 2   | 0.3             |
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input dataframe.
-
-    Returns
-    -------
-    pd.DataFrame
-        Output dataframe.
-    """
-
-
-    df['BurdenIntensity'] = df['BurdenIntensity_USER'].combine_first(df['BurdenIntensity'])
-    df = df.drop(columns=['BurdenIntensity_USER'])
-
-    return df
-
-
-def update_production_based_on_user_data(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Updates the production amount of all nodes which are upstream
-    of a node with user-supplied production amount.
-    If an upstream node has half the use-supplied production amount,
-    then the production amount of all downstream node is also halved.
-
-    For instance, given a DataFrame of the kind:
-
-    | UID | SupplyAmount | SupplyAmount_USER | Branch        |
-    |-----|--------------|-------------------|---------------|
-    | 0   | 1            | NaN               | NaN           |
-    | 1   | 0.5          | 0.25              | [0,1]         |
-    | 2   | 0.2          | NaN               | [0,1,2]       |
-    | 3   | 0.1          | NaN               | [0,3]         |
-    | 4   | 0.1          | 0.18              | [0,1,2,4]     |
-    | 5   | 0.05         | NaN               | [0,1,2,4,5]   |
-    | 6   | 0.01         | NaN               | [0,1,2,4,5,6] |
-
-    the function returns a DataFrame of the kind:
-
-    | UID | SupplyAmount      | Branch        |
-    |-----|-------------------|---------------|
-    | 0   | 1                 | NaN           |
-    | 1   | 0.25              | [0,1]         | NOTA BENE!
-    | 2   | 0.2 * (0.25/0.5)  | [0,1,2]       |
-    | 3   | 0.1               | [0,3]         |
-    | 4   | 0.18              | [0,1,2,4]     | NOTA BENE!
-    | 5   | 0.05 * (0.1/0.18) | [0,1,2,4,5]   |
-    | 6   | 0.01 * (0.1/0.18) | [0,1,2,4,5,6] |
-
-    Notes
-    -----
-
-    As we can see, the function updates production only
-    for those nodes upstream of a node with 'production_user':
-
-    - Node 2 is upstream of node 1, which has a 'production_user' value.
-    - Node 3 is NOT upstream of node 1. It is upstream of node 0, but node 0 does not have a 'production_user' value.
-
-    As we can see, the function always takes the "most recent"
-    'production_user' value upstream of a node:
-
-    - Node 5 is upstream of node 4, which has a 'production_user' value.
-    - Node 4 is upstream of node 1, which also has a 'production_user' value.
-
-    In this case, the function takes the 'production_user' value of node 4, not of node 1.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input DataFrame. Must have the columns 'production', 'production_user' and 'branch'.
-
-    Returns
-    -------
-    pd.DataFrame
-        Output DataFrame.
-    """
-
-    df_filtered = df[~df['SupplyAmount_USER'].isna()]
-    dict_user_input = df_filtered.set_index('UID').to_dict()['SupplyAmount_USER']
-    
-    """
-    For the example DataFrame from the docstrings above,
-    the dict_user_input would be:
-
-    dict_user_input = {
-        1: 0.25,
-        4: 0.18
-    }
-    """
-
-    df = df.copy(deep=True)
-    def multiplier(row):
-        if not isinstance(row['Branch'], list):
-            return row['SupplyAmount']
-        elif (
-            not np.isnan(row['SupplyAmount_USER'])
-        ):
-            return row['SupplyAmount_USER']
-        elif (
-            set(dict_user_input.keys()).intersection(row['Branch'])
-        ):
-            for branch_UID in reversed(row['Branch']):
-                if branch_UID in dict_user_input.keys():
-                    return row['SupplyAmount'] * dict_user_input[branch_UID]
-        else:
-            return row['SupplyAmount']
-
-    df['SupplyAmount_EDITED'] = df.apply(multiplier, axis=1)
-
-    df.drop(columns=['SupplyAmount_USER'], inplace=True)
-    df['SupplyAmount'] = df['SupplyAmount_EDITED']
-    df.drop(columns=['SupplyAmount_EDITED'], inplace=True)
-
-    return df
-
-
-def update_burden_based_on_user_data(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Updates the environmental burden of nodes
-    by multiplying the burden intensity and the supply amount.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input dataframe.
-
-    Returns
-    -------
-    pd.DataFrame
-        Output dataframe.
-    """
-
-    df['Burden(Direct)'] = df['SupplyAmount'] * df['BurdenIntensity']
-    return df
-
-
-def determine_edited_rows(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Determines which rows have been edited by the user.
-
-    For instance, given a DataFrame of the kind:
-
-    | UID | SupplyAmount_USER | BurdenIntensity_USER |
-    |-----|-------------------|----------------------|
-    | 0   | NaN               | NaN                  |
-    | 1   | 0.25              | NaN                  |
-    | 2   | NaN               | 2.1                  |
-    | 3   | NaN               | NaN                  |
-
-    the function returns a DataFrame of the kind:
-
-    | UID | SupplyAmount_USER | BurdenIntensity_USER | Edited? |
-    |-----|-------------------|----------------------|---------|
-    | 0   | NaN               | NaN                  | False   |
-    | 1   | 0.25              | NaN                  | True    |
-    | 2   | NaN               | 2.1                  | True    |
-    | 3   | NaN               | NaN                  | False   |
-    """
-    df['Edited?'] = df[['SupplyAmount_USER', 'BurdenIntensity_USER']].notnull().any(axis=1)
-    return df
+brightway_wasm_database_storage_workaround()
 
 
 def create_plotly_figure_piechart(data_dict: dict) -> plotly.graph_objects.Figure:
@@ -506,43 +71,6 @@ def create_plotly_figure_piechart(data_dict: dict) -> plotly.graph_objects.Figur
     return plotly_figure
 
 
-def generate_table_filename() -> str:
-    """
-    Generates a string to be used a filename for downloading the tabulator.value DataFrame.
-
-    Returns
-    -------
-    str
-        Filename string.
-    """
-    str_filename: str = (
-        "activity='"
-        + panel_lca_class_instance.chosen_activity['name'].replace(' ', '_').replace(';', '') .replace(',', '')
-        + "'_method='"
-        + '-'.join(panel_lca_class_instance.chosen_method.name).replace(' ', '-')
-        + "'_cutoff=" 
-        + str(panel_lca_class_instance.graph_traversal_cutoff).replace('.', ',') 
-        + ".csv"
-    )
-    return str_filename
-
-
-def determine_scope_emissions(df: pd.DataFrame):
-        """
-        Determines the scope 1/2/3 emissions from the graph traversal nodes dataframe.
-        """
-        dict_scope = {
-            'Scope 1': 0,
-            'Scope 2': 0,
-            'Scope 3': 0
-        }
-        
-        dict_scope['Scope 1'] = df.loc[(df['Scope'] == 1)]['Burden(Direct)'].values.sum()
-        dict_scope['Scope 2'] = df.loc[(df['Scope'] == 2)]['Burden(Direct)'].values.sum()
-        dict_scope['Scope 3'] = df['Burden(Direct)'].sum() - dict_scope['Scope 1'] - dict_scope['Scope 2']
-
-        return dict_scope
-
 class panel_lca_class:
     """
     This class is used to store all the necessary information for the LCA calculation.
@@ -551,6 +79,14 @@ class panel_lca_class:
 
     Notes
     -----
+    Why this class?
+    Because for some reason data (dataframes, etc.) 
+    can only be stored in a class.
+    Therefore, functions bound to buttons etc., 
+    can only be methods of the class.
+
+    See Also
+    --------
     https://discourse.holoviz.org/t/update-global-variable-through-function-bound-with-on-click/
     """
     brightway_wasm_database_storage_workaround()
@@ -565,8 +101,8 @@ class panel_lca_class:
         self.chosen_method_unit = ''
         self.chosen_amount = 0
         self.lca = None
-        self.scope_dict = {'Scope 1':0, 'Scope 2':0, 'Scope 3':0}
-        self.graph_traversal_cutoff = 1
+        self.scope_dict = {'Scope 1': 0, 'Scope 2': 0, 'Scope 3': 0}
+        self.graph_traversal_cutoff = 0.123
         self.graph_traversal = {}
         self.df_graph_traversal_nodes = None
         self.df_graph_traversal_edges = None
@@ -582,8 +118,7 @@ class panel_lca_class:
         If not, installs it and sets is as current project.
         Else just sets the current project to USEEIO-1.1.
         """
-        check_for_useeio_brightway_project(event)
-        self.db = bd.Database(self.db_name)
+        load_and_set_useeio_project()
 
 
     def set_list_db_products(self, event):
@@ -602,14 +137,6 @@ class panel_lca_class:
         }
         """
         dict_methods = {i[-1]:[i] for i in bd.methods}
-
-        """
-        dict_method_names = {
-            'HRSP': 'Human Health: Respiratory effects',
-            'OZON': 'Ozone Depletion',
-            ...
-        }
-        """
         # hardcoded for better Pyodide performance
         dict_methods_names = {
             "HRSP": "Human Health - Respiratory Effects",
@@ -632,19 +159,6 @@ class panel_lca_class:
             "SMOG": "Smog Formation",
             "ENRG": "Energy"
         }
-        # path_impact_categories_names: str = '../app/_data/USEEIO_impact_categories_names.csv'
-        # dict_methods_names = {}
-        # with open(path_impact_categories_names, mode='r', newline='', encoding='utf-8-sig') as file:
-        #    reader = csv.reader(file)
-        #    dict_methods_names = {rows[0]: rows[1] for rows in reader}
-
-        """
-        dict_methods_units = {
-            'HRSP': '[kg PM2.5 eq]',
-            'OZON': '[kg O3 eq]',
-            ...
-        }
-        """
         # hardcoded for better Pyodide performance
         dict_methods_units = {
             "HRSP": "[kg PM2.5 eq]",
@@ -667,12 +181,6 @@ class panel_lca_class:
             "SMOG": "[kg O3 eq]",
             "ENRG": "[MJ]"
         }
-        # path_impact_categories_units: str = '../app/_data/USEEIO_impact_categories_units.csv'
-        # dict_methods_units = {}
-        # with open(path_impact_categories_units, mode='r', newline='', encoding='utf-8-sig') as file:
-        #    reader = csv.reader(file)
-        #    dict_methods_units = {rows[0]: str('[')+rows[1]+str(']') for rows in reader}
-
         """
         dict_methods_enriched = {
             'HRSP': [('Impact Potential', 'HRSP'), 'Human Health - Respiratory effects', '[kg PM2.5 eq]'],
@@ -732,19 +240,6 @@ class panel_lca_class:
         self.chosen_amount = widget_float_input_amount.value
 
 
-    def perform_lca(self, event):
-        """
-        Performs the LCA calculation using the chosen product, method, and amount.
-        Sets the `lca` attribute to an instance of the `bw2calc.LCA` object.
-        """
-        self.lca = bc.LCA( 
-            demand={self.chosen_activity: self.chosen_amount}, 
-            method = self.chosen_method.name
-        )
-        self.lca.lci()
-        self.lca.lcia()
-
-
     def set_graph_traversal_cutoff(self, event):
         """
         Sets the `graph_traversal_cutoff` attribute to the float value from the float slider widget.
@@ -753,27 +248,66 @@ class panel_lca_class:
         self.graph_traversal_cutoff = widget_float_slider_cutoff.value / 100
 
 
-    def perform_graph_traversal(self, event):
-        widget_cutoff_indicator_statictext.value = self.graph_traversal_cutoff * 100
-        self.graph_traversal: dict = bgt.NewNodeEachVisitGraphTraversal.calculate(self.lca, cutoff=self.graph_traversal_cutoff)
-        self.df_graph_traversal_nodes: pd.DataFrame = nodes_dict_to_dataframe(self.graph_traversal['nodes'])
-        self.df_graph_traversal_edges: pd.DataFrame = edges_dict_to_dataframe(self.graph_traversal['edges'])
-        if self.df_graph_traversal_edges.empty:
-            return
-        else:
-            self.df_graph_traversal_edges = add_branch_information_to_edges_dataframe(self.df_graph_traversal_edges)
-            self.df_tabulator_from_traversal = pd.merge(
-                self.df_graph_traversal_nodes,
-                self.df_graph_traversal_edges,
-                left_on='UID',
-                right_on='producer_unique_id',
-                how='left')
+    def trigger_graph_traversal(self, event):
+        self.df_tabulator_from_traversal = perform_graph_traversal(
+            demand={self.chosen_activity: self.chosen_amount},
+            method=self.chosen_method.name,
+            cutoff=self.graph_traversal_cutoff,
+            biosphere_cutoff=0.01,
+            max_calc=100,
+            return_format='dataframe',
+        )
+        
+
+    def determine_scope_2(self, event):
+        """
+        sets "Scope" to 2 for all rows where the "Name" column equals "Electricity; at consumer"
+        """
+        self.df_tabulator_from_traversal.loc[self.df_tabulator_from_traversal['Name'] == 'Electricity; at consumer', 'Scope'] = 2
 
 
-brightway_wasm_database_storage_workaround()
+    def set_table_filename(self, event):
+        """
+        Generates a string to be used a filename for downloading the tabulator.value DataFrame.
+
+        Returns
+        -------
+        str
+            Filename string.
+        """
+        str_filename: str = (
+            "activity='"
+            + self.chosen_activity['name'].replace(' ', '_').replace(';', '') .replace(',', '')
+            + "'_method='"
+            + '-'.join(self.chosen_method.name).replace(' ', '-')
+            + "'_cutoff=" 
+            + str(self.graph_traversal_cutoff).replace('.', ',') 
+            + ".csv"
+        )
+        filename_download.value = str_filename
+
+
+    def determine_scope_emissions(self, event):
+        """
+        Determines the scope 1/2/3 emissions from the graph traversal nodes dataframe.
+        """
+        dict_scope = {
+            'Scope 1': 0,
+            'Scope 2': 0,
+            'Scope 3': 0
+        }
+        
+        dict_scope['Scope 1'] = self.widget_tabulator.value.loc[(df['Scope'] == 1)]['Burden(Direct)'].values.sum()
+        dict_scope['Scope 2'] = self.widget_tabulator.value.loc[(df['Scope'] == 2)]['Burden(Direct)'].values.sum()
+        dict_scope['Scope 3'] = self.widget_tabulator.value['Burden(Direct)'].sum() - dict_scope['Scope 1'] - dict_scope['Scope 2']
+
+        panel_lca_class_instance.scope_dict = dict_scope
+
 panel_lca_class_instance = panel_lca_class()
 
+
 # COLUMN 1 ####################################################################
+
 
 def button_action_load_database(event):
     panel_lca_class_instance.set_db(event)
@@ -789,93 +323,28 @@ def button_action_perform_lca(event):
         pn.state.notifications.error('Please select a reference product first!', duration=5000)
         return
     else:
-        panel_lca_class_instance.df_graph_traversal_nodes = pd.DataFrame()
         widget_plotly_figure_piechart.object = create_plotly_figure_piechart({'null':0})
         pn.state.notifications.info('Calculating LCA score...', duration=5000)
         pass
     panel_lca_class_instance.set_chosen_activity(event)
     panel_lca_class_instance.set_chosen_method_and_unit(event)
     panel_lca_class_instance.set_chosen_amount(event)
-    panel_lca_class_instance.perform_lca(event)
-    pn.state.notifications.success('Completed LCA score calculation!', duration=5000)
-    widget_number_lca_score.format = f'{{value:,.3f}} {panel_lca_class_instance.chosen_method_unit}'
-    perform_graph_traversal(event)
-    perform_scope_analysis(event)
-
-
-def perform_graph_traversal(event):
-    pn.state.notifications.info('Performing Graph Traversal...', duration=5000)
-    panel_lca_class_instance.bool_user_provided_data = False
     panel_lca_class_instance.set_graph_traversal_cutoff(event)
-    panel_lca_class_instance.perform_graph_traversal(event)
-    panel_lca_class_instance.df_tabulator = panel_lca_class_instance.df_tabulator_from_traversal.copy()
-    widget_tabulator.value = panel_lca_class_instance.df_tabulator
-    column_editors = {
-        colname: None
-        for colname in panel_lca_class_instance.df_tabulator.columns
-        if colname not in ['Scope', 'SupplyAmount', 'BurdenIntensity']
-    }
-    column_editors['Scope'] = {'type': 'list', 'values': [1, 2, 3]}
-    widget_tabulator.editors = column_editors
-    pn.state.notifications.success('Graph Traversal Complete!', duration=5000)
-
+    panel_lca_class_instance.trigger_graph_traversal(event)
+    panel_lca_class_instance.determine_scope_2(event)
+    widget_number_lca_score.format = f'{{value:,.3f}} {panel_lca_class_instance.chosen_method_unit}'
+    widget_tabulator.value = panel_lca_class_instance.df_tabulator_from_traversal
+    pn.state.notifications.success('Completed LCA score calculation!', duration=5000)
+    perform_scope_analysis(event)
 
 
 def perform_scope_analysis(event):
     pn.state.notifications.info('Performing Scope Analysis...', duration=5000)
-    panel_lca_class_instance.scope_dict = determine_scope_emissions(df=widget_tabulator.value)
+    panel_lca_class_instance.determine_scope_emissions(event)
     widget_plotly_figure_piechart.object = create_plotly_figure_piechart(panel_lca_class_instance.scope_dict)
-    filename_download.value = generate_table_filename()
+    panel_lca_class_instance.set_table_filename(event)
     widget_number_lca_score.value = panel_lca_class_instance.df_tabulator['Burden(Direct)'].sum()
     pn.state.notifications.success('Scope Analysis Complete!', duration=5000)
-
-
-def update_data_based_on_user_input(event):
-    pn.state.notifications.info('Updating Supply Chain based on User Input...', duration=5000)
-    panel_lca_class_instance.df_tabulator_from_user = create_user_input_columns(
-        df_original=panel_lca_class_instance.df_tabulator_from_traversal,
-        df_user_input=panel_lca_class_instance.df_tabulator_from_user,
-    )
-    panel_lca_class_instance.df_tabulator_from_user = determine_edited_rows(df=panel_lca_class_instance.df_tabulator_from_user)
-    panel_lca_class_instance.df_tabulator_from_user = update_production_based_on_user_data(df=panel_lca_class_instance.df_tabulator_from_user)
-    panel_lca_class_instance.df_tabulator_from_user = update_burden_intensity_based_on_user_data(df=panel_lca_class_instance.df_tabulator_from_user)
-    panel_lca_class_instance.df_tabulator_from_user = update_burden_based_on_user_data(panel_lca_class_instance.df_tabulator_from_user)
-    panel_lca_class_instance.df_tabulator = panel_lca_class_instance.df_tabulator_from_user.copy()
-    widget_tabulator.value = panel_lca_class_instance.df_tabulator
-    pn.state.notifications.success('Completed Updating Supply Chain based on User Input!', duration=5000)
-
-def button_action_scope_analysis(event):
-    if panel_lca_class_instance.lca is None:
-        pn.state.notifications.error('Please perform an LCA Calculation first!', duration=5000)
-        return
-    else:
-        # if the user has not yet performed graph traversal, or changed the cutoff value,
-        # then perform graph traversal and scope analysis
-        if (
-            panel_lca_class_instance.df_graph_traversal_nodes.empty or
-            widget_float_slider_cutoff.value / 100 != panel_lca_class_instance.graph_traversal_cutoff
-        ):
-            perform_graph_traversal(event)
-            perform_scope_analysis(event)
-        # if the user has already provided input data, we reset the dataframe
-        elif panel_lca_class_instance.bool_user_provided_data == True:
-            pn.state.notifications.error('You are not allowed to edit a table which has already been re-computed on your input! Resetting the table...', duration=5000)
-            perform_graph_traversal(event)
-            perform_scope_analysis(event)
-        # if the user has overriden either supply or burden intensity values in the table,
-        # then update upstream values based on user input
-        elif (
-            (panel_lca_class_instance.df_tabulator['SupplyAmount'] != panel_lca_class_instance.df_tabulator_from_traversal['SupplyAmount']).any() or 
-            (panel_lca_class_instance.df_tabulator['BurdenIntensity'] != panel_lca_class_instance.df_tabulator_from_traversal['BurdenIntensity']).any()
-        ):
-            panel_lca_class_instance.bool_user_provided_data = True
-            panel_lca_class_instance.df_tabulator_from_user = panel_lca_class_instance.df_tabulator.copy()
-            update_data_based_on_user_input(event)
-            perform_scope_analysis(event)
-        elif (
-            (panel_lca_class_instance.df_tabulator['Scope'] != panel_lca_class_instance.df_tabulator_from_traversal['Scope']).any()
-        ):
-            perform_scope_analysis(event)
 
 
 widget_button_load_db = pn.widgets.Button( 
@@ -885,6 +354,8 @@ widget_button_load_db = pn.widgets.Button(
     sizing_mode='stretch_width'
 )
 widget_button_load_db.on_click(button_action_load_database)
+
+
 
 widget_autocomplete_product = pn.widgets.AutocompleteInput( 
     name='Reference Product/Product/Service',
@@ -903,7 +374,6 @@ widget_select_method = pn.widgets.Select(
     name='Impact Assessment Method',
     options=[],
     sizing_mode='stretch_width',
-
 )
 
 widget_float_input_amount = pn.widgets.FloatInput( 
@@ -934,14 +404,14 @@ widget_float_slider_cutoff = pn.widgets.EditableFloatSlider(
 markdown_cutoff_documentation = pn.pane.Markdown("""
 [A cut-off of 10%](https://docs.brightway.dev/projects/graphtools/en/latest/content/api/bw_graph_tools/graph_traversal/new_node_each_visit/index.html) means that an upstream process is shown if it accounts for at least 10% of total impact. The lower value of 1% is chosen here for performance reasons only.
 """)
-        
+
 widget_button_graph = pn.widgets.Button(
     name='Update Data based on User Input',
     icon='chart-donut-3',
     button_type='primary',
     sizing_mode='stretch_width'
 )
-widget_button_graph.on_click(button_action_scope_analysis)
+# widget_button_graph.on_click(button_action_scope_analysis)
 
 widget_number_lca_score = pn.indicators.Number(
     name='LCA Impact Score',
@@ -1023,9 +493,9 @@ col2 = pn.Column(
 # SITE ######################################################################
 
 code_open_window = """
-window.open("https://github.com/brightway-lca/brightway-webapp/blob/main/README.md")
+window.open("https://brightwebapp.readthedocs.io/")
 """
-button_about = pn.widgets.Button(name="Learn more about this prototype...", button_type="success")
+button_about = pn.widgets.Button(name="Learn more about this web application...", button_type="success")
 button_about.js_on_click(code=code_open_window)
 
 header = pn.Row(
@@ -1042,10 +512,10 @@ header = pn.Row(
 
 template = pn.template.MaterialTemplate(
     header=header,
-    title='Brightway WebApp (Carbon Accounting)',
+    title='BrightWebApp (Carbon Accounting)',
     header_background='#2d853a', # green
-    logo='https://raw.githubusercontent.com/brightway-lca/brightway-webapp/main/app/_media/logo_brightway_white.svg',
-    favicon='https://raw.githubusercontent.com/brightway-lca/brightway-webapp/main/app/_media/favicon.png',
+    logo='https://raw.githubusercontent.com/brightway-lca/brightway-webapp/main/docs/_logos/brightwebapp_logo.svg',
+    favicon='https://raw.githubusercontent.com/brightway-lca/brightway-webapp/main/docs/_logos/brightwebapp_logo.svg',
 )
 
 gspec = pn.GridSpec(ncols=3, sizing_mode='stretch_both')
