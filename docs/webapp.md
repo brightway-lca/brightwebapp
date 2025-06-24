@@ -24,9 +24,7 @@ python -m http.server
     
     All dependencies of the web application must be installed in the virtual environment from which the `panel convert` command is called.
 
-#### Pyodide Python Package Versions
-
-Pyodide is a monolithic distribution of Python, which means that it ships with a specific set of Python packages and versions. The versions of the packages are fixed and cannot be changed. The list of packages and their versions are listed under ["Packages in Pyodide"](https://pyodide.org/en/stable/usage/packages-in-pyodide.html).
+[Pyodide](https://pyodide.org/en/stable/index.html) is a monolithic distribution of Python, which means that it ships with a specific set of Python packages and versions. The versions of the packages are fixed and cannot be changed. The list of packages and their versions are listed under ["Packages in Pyodide"](https://pyodide.org/en/stable/usage/packages-in-pyodide.html).
 
 #### Specifying the Pyodide Version
 
