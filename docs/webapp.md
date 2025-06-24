@@ -23,9 +23,7 @@ await micropip.install('<PACKAGENAME==PACKAGEVERSION>')
 
 ### Converting to Pyodide Web Application
 
-!!! info
-
-    Panel Documentation: ["Converting Panel Applications"](https://panel.holoviz.org/how_to/wasm/convert.html)
+Panel applications can be converted to a web application that runs in the browser using [Pyodide](https://pyodide.org/en/stable/index.html) (Python in the browser) with [the `panel convert` command](https://panel.holoviz.org/how_to/wasm/convert.html):
 
 ```bash
 panel convert app/index.py --to pyodide-worker --out pyodide
