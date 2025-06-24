@@ -2,6 +2,25 @@
 
 ## Pyodide (Python in the Browser)
 
+### Testing Pyodide Compatiblitiy
+
+The compatibility of a Python package with Pyodide can be easily tested using [the Pyodide REPL in the browser](https://pyodide.org/en/stable/console.html), using [the usual installation process](https://pyodide.org/en/stable/usage/loading-packages.html):
+
+```python
+import micropip
+await micropip.install('<PACKAGENAME==PACKAGEVERSION>')
+```
+
+!!! tip
+
+    [Different versions of Pyodide](https://github.com/pyodide/pyodide/releases) can be specified by changing the URL in the browser address bar, e.g:
+    
+    ```
+    https://pyodide.org/en/0.27.7/console.html
+    https://pyodide.org/en/stable/console.html
+    https://pyodide.org/en/latest/console.html
+    ```
+
 ### Converting to Pyodide Web Application
 
 !!! info
