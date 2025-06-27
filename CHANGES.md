@@ -1,12 +1,12 @@
 # `brightwebapp` Changelog
 
-## 0.0.3 (2025-06-22)
+## 0.1.0 (2025-06-27)
 
-- Made FastAPI and associated packages optional dependencies.
+First "stable" release.
 
-## 0.0.2 (2025-06-22)
+## 0.0.2 - 0.0.6
 
-- Removed outdated test file and updated GitHub Actions publishing workflows.
+Minor releases no longer available on PyPi
 
 ## 0.0.1 (2025-06-22)
 

@@ -6,7 +6,7 @@
 
 The compatibility of a Python package with Pyodide can be easily tested using [the Pyodide REPL in the browser](https://pyodide.org/en/stable/console.html), using [the usual installation process](https://pyodide.org/en/stable/usage/loading-packages.html):
 
-```python
+```py
 import micropip
 await micropip.install('<PACKAGENAME==PACKAGEVERSION>')
 ```
@@ -55,31 +55,75 @@ importScripts("https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js");
 
 After converting the web application using `panel convert`, the dependencies (=Python packages) which Pyodide must load from PyPi are listed in the file `index.js` in the function `startApplication()` under:
 
-```javascript
-const env_spec = [
-    'https://cdn.holoviz.org/panel/wheels/bokeh-3.7.3-py3-none-any.whl',
-    'https://cdn.holoviz.org/panel/1.7.1/dist/wheels/panel-1.7.1-py3-none-any.whl',
-    'pyodide-http==0.2.1',
-    'brightwebapp',
-    'bw2data',
-    'pandas',
-    'plotly'
-]
+```javascript hl_lines="8"
+async function startApplication() {
+  console.log("Loading pyodide!");
+  self.postMessage({type: 'status', msg: 'Loading pyodide'})
+  self.pyodide = await loadPyodide();
+  self.pyodide.globals.set("sendPatch", sendPatch);
+  console.log("Loaded!");
+  await self.pyodide.loadPackage("micropip");
+  const env_spec = ['https://cdn.holoviz.org/panel/wheels/bokeh-3.7.3-py3-none-any.whl', 'https://cdn.holoviz.org/panel/1.7.1/dist/wheels/panel-1.7.1-py3-none-any.whl', 'pyodide-http==0.2.1', 'lzma', 'typing-extensions', 'brightwebapp==0.0.6']
+  for (const pkg of env_spec) {
+    let pkg_name;
+    if (pkg.endsWith('.whl')) {
+      pkg_name = pkg.split('/').slice(-1)[0].split('-')[0]
+    } else {
+      pkg_name = pkg
+    }
+(...)
 ```
 
 By default, Panel _infers_ the dependencies from the Python code of the web application, but this can be overridden by specifying the `--requirements` option.
 
 !!! warning
 
-    The Pyodide distribution [has removed some large-size modules of the Python standard library](https://pyodide.org/en/stable/usage/wasm-constraints.html#optional-modules) to reduce the initial download size:
-
-    - ssl
-    - lzma
-    - sqlite3
-    - test
-
+    The Pyodide distribution [has removed some large-size modules of the Python standard library](https://pyodide.org/en/stable/usage/wasm-constraints.html#optional-modules) to reduce the initial download size, including `ssl`, `lzma`, `sqlite3`, and `test`.
+    
     If your application uses any of these modules, you **must** make sure they are listed in the `index.js`. For this, you must use a requirements file to specify the packages explicitly and pass the file to the `--requirements` option of the `panel convert` command:
 
     ```bash
     panel convert app/index.py --to pyodide-worker --out pyodide --requirements app/requirements_pyodide_conversion.txt
     ```
+
+#### Pinning ALL Dependencies for Maximum Reproducibility
+
+Why would I need this?
+How can I best do this?
+
+### Running Python Code before the Application Loads
+
+Arbitrary Python code can be run before the web application loads by modifying the `index.js` file in the `pyodide` directory after the conversion. Python code can be wrapped in a `await self.pyodide.runPythonAsync` block and moved to arbitrary places in the `startApplication()` function:
+
+```javascript hl_lines="18-22"
+async function startApplication() {
+  console.log("Loading pyodide!");
+  self.postMessage({type: 'status', msg: 'Loading pyodide'})
+  self.pyodide = await loadPyodide();
+  self.pyodide.globals.set("sendPatch", sendPatch);
+  console.log("Loaded!");
+  await self.pyodide.loadPackage("micropip");
+  const env_spec = ['https://cdn.holoviz.org/panel/wheels/bokeh-3.7.3-py3-none-any.whl', 'https://cdn.holoviz.org/panel/1.7.1/dist/wheels/panel-1.7.1-py3-none-any.whl', 'pyodide-http==0.2.1', 'lzma', 'typing-extensions', 'brightwebapp==0.0.6']
+  for (const pkg of env_spec) {
+    let pkg_name;
+    if (pkg.endsWith('.whl')) {
+      pkg_name = pkg.split('/').slice(-1)[0].split('-')[0]
+    } else {
+      pkg_name = pkg
+    }
+    self.postMessage({type: 'status', msg: `Installing ${pkg_name}`})
+    try {
+      await self.pyodide.runPythonAsync(`
+        import micropip
+        await micropip.install('${pkg}');
+      `);
+    } catch(e) {
+      console.log(e)
+      self.postMessage({
+	type: 'status',
+	msg: `Error while installing ${pkg_name}`
+      });
+    }
+  }
+(...)
+```
