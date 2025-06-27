@@ -22,7 +22,7 @@ affiliations:
    index: 1
  - name: Chair of Energy Systems Analysis, Institute of Energy and Process Engineering, Department of Mechanical and Process Engineering, ETH Zurich, Zurich, Switzerland
    index: 2
-  - name: Départ de Sentier (DdS) Non-Profit Association, Riniken, Switzerland
+ - name: Départ de Sentier (DdS) Non-Profit Association, Riniken, Switzerland
    index: 3
 date: 01 July 2025
 bibliography: paper.bib
