@@ -50,18 +50,29 @@ def load_and_set_useeio_project() -> None:
     https://files.brightway.dev/USEEIO-1.1.tar.gz
     ```
 
-    However, this function loads it from a Zenodo repository, which is more reliable and has guaranteed uptime:
+    However, this function loads it from a GitHub repository, which is more reliable and has guaranteed uptime:
 
+    Warnings
+    --------
+    The Zenodo URL where this file is archived
+    
     ```
     https://zenodo.org/records/15685370/files/USEEIOv1.1.tar.gz
     ```
+    
+    cannot be used directly due to browser CORS (Cross-Origin Resource Sharing)
+    security policies. The Zenodo link redirects to a file server
+    that lacks the required CORS headers, causing the browser
+    to block the download. This function therefore uses a copy
+    hosted on raw.githubusercontent.com, which is correctly
+    configured for cross-origin access.
     """
     if 'USEEIO-1.1' not in bd.projects:
         bi.install_project(
         project_key="USEEIO-1.1",
         project_name="USEEIO-1.1",
         projects_config={"USEEIO-1.1": "USEEIOv1.1.tar.gz"},
-        url="https://zenodo.org/records/15685370/files/",
+        url="https://raw.githubusercontent.com/brightway-lca/brightwebapp/main/data/",
         overwrite_existing=True
     )
     else:
