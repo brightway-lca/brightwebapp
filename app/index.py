@@ -119,6 +119,7 @@ class panel_lca_class:
         Else just sets the current project to USEEIO-1.1.
         """
         load_and_set_useeio_project()
+        self.db = bd.Database(self.db_name)
 
 
     def set_list_db_products(self, event):
