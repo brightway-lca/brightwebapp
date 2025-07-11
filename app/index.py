@@ -324,7 +324,6 @@ def button_action_perform_lca(event):
         pn.state.notifications.error('Please select a reference product first!', duration=5000)
         return
     else:
-        widget_plotly_figure_piechart.object = create_plotly_figure_piechart({'null':0})
         pn.state.notifications.info('Calculating LCA score...', duration=5000)
         pass
     panel_lca_class_instance.set_chosen_activity(event)
@@ -335,6 +334,7 @@ def button_action_perform_lca(event):
     panel_lca_class_instance.determine_scope_2(event)
     widget_number_lca_score.format = f'{{value:,.3f}} {panel_lca_class_instance.chosen_method_unit}'
     widget_tabulator.value = panel_lca_class_instance.df_tabulator_from_traversal
+    widget_plotly_figure_piechart.object = create_plotly_figure_piechart(panel_lca_class_instance.scope_dict)
     pn.state.notifications.success('Completed LCA score calculation!', duration=5000)
     perform_scope_analysis(event)
 
