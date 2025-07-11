@@ -1,4 +1,3 @@
-# %%
 from typing import Optional
 import bw2data as bd
 import bw2io as bi
@@ -7,6 +6,7 @@ import os
 def load_and_set_ecoinvent_project(
     username: Optional[str] = None,
     password: Optional[str] = None,
+    overwrite_existing: bool = False
 ) -> None:
     """Checks if the ecoinvent 3.10 Brightway project is installed.
     If not, loads it from Ecoinvent servers and installs it.
@@ -19,7 +19,14 @@ def load_and_set_ecoinvent_project(
     --------
     [`bw2io.bi.import_ecoinvent_release`](https://docs.brightway.dev/en/latest/content/api/bw2io/index.html#bw2io.import_ecoinvent_release)
     """
+    if overwrite_existing == True:
+        try:
+            bd.projects.delete_project(name='ei_3_10', delete_dir=True)
+        except KeyError:
+            pass
+
     if "ei_3_10" not in bd.projects:
+        bd.projects.set_current(name='ei_3_10')
         if username is None or password is None:
             raise ValueError("Username and password must be provided to load ecoinvent project.")
         bi.import_ecoinvent_release(
@@ -30,7 +37,7 @@ def load_and_set_ecoinvent_project(
         )
     else:
         pass
-    bd.projects.set_current(name='ei_3_10')
+    
 
 
 def load_and_set_useeio_project() -> None:

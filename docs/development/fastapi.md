@@ -1,6 +1,23 @@
-# FastAPI
+# Docker and FastAPI
 
-## Test
+## Docker Setup
+
+Build the Docker image:
+
+!!! note
+    Replace `<image_name>` with your desired image name.
+
+```bash
+docker build -t <image_name>:latest .
+```
+
+Spin up a docker container and bind the port 8000 to localhost:
+
+```bash
+docker run -d -p 8000:8000 <image_name>:latest
+```
+
+## Test USEEIO Database Operations
 
 The USEEIO database can be tested with the FastAPI server. The following command sets up the database in the Docker instance:
 
@@ -26,6 +43,19 @@ curl -X POST 'http://localhost:8000/traversal/perform' \
     ]
 }' \
 --output traversal_result.csv
+```
+
+## Test Ecoinvent Database Operations
+
+The Ecoinvent database can be tested with the FastAPI server. The following command sets up the database in the Docker instance:
+
+```bash
+curl -X POST http://localhost:8080/setup/ecoinvent-database \
+-H "Content-Type: application/json" \
+-d '{
+        "username": "MichaelWeinold",
+        "password": "jaqpaj-Mippuw-8hyjhe"
+    }'
 ```
 
 ## Update Documentation
