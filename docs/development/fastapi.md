@@ -4,9 +4,8 @@
 
 The USEEIO database can be tested with the FastAPI server. The following command sets up the database in the Docker instance:
 
-
 ```bash
-
+curl -X POST http://localhost:8000/setup/useeio-database
 ```
 
 and:
@@ -27,4 +26,14 @@ curl -X POST 'http://localhost:8000/traversal/perform' \
     ]
 }' \
 --output traversal_result.csv
+```
+
+## Update Documentation
+
+```bash
+uvicorn api.main:app --reload
+```
+
+```
+http://localhost:8000/openapi.json
 ```
