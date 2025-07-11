@@ -14,8 +14,11 @@ RUN pip install --upgrade pip
 # Copy only the project file to leverage Docker layer caching
 COPY pyproject.toml .
 
-# Copy the package source (now in src/brightwebapp; copied to /app/brightwebapp for consistency)
-COPY src/brightwebapp/ ./brightwebapp
+# Copy README.md (needed for dynamic readme metadata)
+COPY README.md .
+
+# Copy the package source preserving the src/ layout (to match [tool.setuptools.package-dir] "" = "src")
+COPY src/ ./src
 
 # Install the project with API extras (includes fastapi and uvicorn)
 RUN pip install --no-cache-dir --prefix="/install" .[api]
@@ -32,7 +35,7 @@ COPY --from=builder /install /usr/local
 # Copy your application source code
 # Make sure your package name 'brightwebapp' is correct here.
 # https://docs.docker.com/reference/dockerfile/#copy
-COPY src/brightwebapp/ ./brightwebapp
+COPY src/ ./src
 COPY api/ ./api
 
 # Expose the port the API will run on

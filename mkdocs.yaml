@@ -15,8 +15,9 @@ nav:
     - Tests: 'api/tests.md'
   - API (FastAPI):
     - Endpoints: 'api/endpoints.md'
-  - Web Application:
-    - Development: 'webapp.md'
+  - Development:
+    - Web Application: 'development/webapp.md'
+    - FastAPI: 'development/fastapi.md'
   - Changelog: 'changelog.md'
 theme: # https://www.mkdocs.org/user-guide/choosing-your-theme/#readthedocs
   name: material

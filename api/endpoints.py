@@ -2,7 +2,7 @@ from fastapi import APIRouter, Response, BackgroundTasks, HTTPException
 from io import StringIO
 from pydantic import BaseModel
 
-
+import bw2data as bd
 from brightwebapp.brightway import load_and_set_useeio_project
 from brightwebapp.traversal import perform_graph_traversal
 
@@ -137,23 +137,6 @@ async def setup_useeio_database(background_tasks: BackgroundTasks):
     See Also
     --------
     [`brightwebapp.brightway.load_and_set_useeio_project`][]
-
-    Example
-    -------
-    To trigger this endpoint, you can use a tool like ``curl``.
-
-    **Request:**
-
-    ```bash
-    curl -X POST http://localhost:8080/setup/useeio-database
-    ```
-    **Immediate Response (202 Accepted):**
-
-    ```json
-    {
-        "status": "accepted",
-        "message": "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."
-    }
     ```
     """
     background_tasks.add_task(load_and_set_useeio_project)
