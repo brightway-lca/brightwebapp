@@ -1,4 +1,4 @@
-# ---- Stage 1: Build dependencies ----
+# Stage 1: Build dependencies
 # This stage installs dependencies into a specific directory.
 # It's only re-run if pyproject.toml changes.
 # https://docs.docker.com/reference/dockerfile/#from
@@ -13,9 +13,6 @@ RUN pip install --upgrade pip
 
 # Copy only the project file to leverage Docker layer caching
 COPY pyproject.toml .
-
-# Copy README.md (needed for dynamic readme metadata)
-COPY README.md .
 
 # Copy the package source preserving the src/ layout (to match [tool.setuptools.package-dir] "" = "src")
 COPY src/ ./src
@@ -43,4 +40,4 @@ EXPOSE 8000
 
 # The command to run your API using Uvicorn
 # It looks for the 'app' object in the 'api.main' module.
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "api.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,5 +1,6 @@
 # run this script to generate the OpenAPI schema for the FastAPI application
 # it will create a file named openapi.json in the current directory
+# python _generate_openapi_schema.py
 
 import json
 from main import app

@@ -19,25 +19,27 @@ def load_and_set_ecoinvent_project(
     --------
     [`bw2io.bi.import_ecoinvent_release`](https://docs.brightway.dev/en/latest/content/api/bw2io/index.html#bw2io.import_ecoinvent_release)
     """
-    if overwrite_existing == True:
-        try:
-            bd.projects.delete_project(name='ei_3_10', delete_dir=True)
-        except KeyError:
-            pass
+    project_name = 'ei_3_10'
 
-    if "ei_3_10" not in bd.projects:
-        bd.projects.set_current(name='ei_3_10')
-        if username is None or password is None:
-            raise ValueError("Username and password must be provided to load ecoinvent project.")
+    # 1. if overwrite is requested, delete the project if it exists.
+    if overwrite_existing and project_name in bd.projects:
+        bd.projects.delete_project(project_name, delete_dir=True)
+
+    # 2. if the project doesn't exist, import it.
+    if project_name not in bd.projects:
+        if not username or not password:
+            raise ValueError("Username and password are required to download the ecoinvent database.")
         bi.import_ecoinvent_release(
             version='3.10',
             system_model='cutoff',
             username=username,
             password=password,
         )
-    else:
-        pass
-    
+
+    # 3. now that the project is guaranteed to exist, set it as current.
+    bd.projects.set_current(project_name)
+
+    return 
 
 
 def load_and_set_useeio_project() -> None:

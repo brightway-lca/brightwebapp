@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  web:
+    # Build the image from the Dockerfile in the current directory
+    build: .
+    # Map port 8000 on your local machine to port 8000 in the container
+    ports:
+      - "8000:8000"
+    # Mount your local './api' folder to '/app/api' inside the container
+    volumes:
+      - ./api:/app/api

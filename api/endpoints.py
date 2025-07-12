@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Response, BackgroundTasks, HTTPException
-from io import StringIO
 from pydantic import BaseModel, Field
 from typing import Optional
+
+import logging
 
 import bw2data as bd
 from brightwebapp.brightway import load_and_set_useeio_project, load_and_set_ecoinvent_project
 from brightwebapp.traversal import perform_graph_traversal
 
 router = APIRouter()
-
 
 class SetupResponse(BaseModel):
     """Response model for the setup endpoint."""
@@ -219,6 +219,52 @@ class GraphTraversalRequest(BaseModel):
     max_calc: int = 100
 
 
+@router.get( # Changed from POST to GET
+    "/database/getnode",
+    responses={
+        200: {
+            "description": "On success, a JSON object containing the node's metadata.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "name": "electricity production, hard coal",
+                        "location": "DE",
+                        "unit": "kilowatt hour",
+                        "code": "38300de0f8f94767a9a3458b48392fd7"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Raised if the node with the specified code does not exist.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Node not found for code 'some_invalid_code'"
+                    }
+                }
+            }
+        }
+    }
+)
+async def get_node(code: str):
+    """
+    Retrieves metadata for a specific node in the Brightway database.
+    """
+    logging.warning(f"Attempting to get node in project: {bd.projects.current}")
+    try:
+        # Correctly call get_node with a keyword argument
+        node = bd.get_node(code=code)
+        return {
+            "name": node.get('name'),
+            "location": node.get('location'),
+            "unit": node.get('unit'),
+            "code": node.get('code')
+        }
+    except: # Catches NodeNotFound or any other error from get_node
+        raise HTTPException(status_code=404, detail=f"Node not found for code '{code}'")
+
+
 @router.post(
     "/traversal/perform",
     response_class=Response,
@@ -294,4 +340,6 @@ async def run_graph_traversal(request: GraphTraversalRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        # Add this to see the exact error before it's hidden by HTTPException
+        print(f"ERROR: An exception occurred: {e}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
