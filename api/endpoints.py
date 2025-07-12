@@ -280,7 +280,7 @@ async def run_graph_traversal(request: GraphTraversalRequest):
 
     See Also
     --------
-    [`brightwebapp.traversal.perform_graph_traversal`][]
+    [`brightwebapp.traversal.perform_graph_traversal`](https://brightwebapp.readthedocs.io/en/latest/api/traversal/#brightwebapp.traversal.perform_graph_traversal)
 
     Example
     -------

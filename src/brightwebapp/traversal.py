@@ -183,7 +183,7 @@ def _nodes_dict_to_dataframe(
                 'Name': bd.get_node(id=node.activity_datapackage_id)['name'],
                 'SupplyAmount': node.supply_amount,
                 'BurdenIntensity': node.direct_emissions_score/node.supply_amount,
-                # 'Burden(Cumulative)': node.cumulative_score,
+                'Burden(Cumulative)': node.cumulative_score,
                 'Burden(Direct)': node.direct_emissions_score + node.direct_emissions_score_outside_specific_flows,
                 'Depth': node.depth,
                 'activity_datapackage_id': node.activity_datapackage_id,
@@ -341,7 +341,7 @@ def _trace_branch_from_last_node(
         if previous_node.empty:
             break
         unique_id_last_node: int = previous_node.values[0]
-        branch.insert(0, unique_id_last_node)
+        branch.insert(0, int(unique_id_last_node))
 
     return branch
 
@@ -408,7 +408,7 @@ def _add_branch_information_to_edges_dataframe(df: pd.DataFrame) -> pd.DataFrame
     for _, row in df.iterrows():
         branch: list = _trace_branch_from_last_node(df, int(row['producer_unique_id']))
         branches.append({
-            'producer_unique_id': int(row['producer_unique_id']),
+            'producer_unique_id': row['producer_unique_id'],
             'Branch': branch
         })
 
@@ -456,10 +456,15 @@ def perform_graph_traversal(
     max_calc : int
         An integer representing the maximum number of calculations to be performed during the graph traversal.
         This is used to limit the amount of data processed and the depth of the traversal.
+    return_format : str
+        A string indicating the format of the return value.
+        Can be either `'dataframe'` or `'csv'`.
 
     Returns
     -------
     pd.DataFrame
+        **If `return_format` is `'dataframe'`**:  
+
         A DataFrame with the nodes and edges of the graph traversal.  
         The DataFrame contains the following columns:  
 
@@ -470,8 +475,21 @@ def perform_graph_traversal(
         - `BurdenIntensity`: Burden intensity of the node
         - `Burden(Direct)`: Direct burden of the node
         - `Depth`: Depth of the node in the graph
-        - `Branch`: A list of unique identifiers of the nodes in the branch leading to the terminal producer node
+        - `Branch`: A list of unique identifiers of the nodes in the branch leading to the terminal producer node 
+    str
+        **If `return_format` is `'csv'`**:  
 
+        A CSV string representation of the DataFrame with the nodes and edges of the graph traversal.  
+        Separated by `,` without an index column:
+
+        ```csv
+        'UID,Scope,Name,SupplyAmount,BurdenIntensity,Burden(Direct),Depth,Branch\n
+        0,1,Automobiles; at manufacturer,1.0011622689671917,0.01544686198282003,0.023025946699367965,1,\n
+        1,3,Vehicle electrical and electronic equipment; at manufacturer,0.013377550027867835,0.0093078791680739,0.0002490332384485149,2,"[0, 1]"\n
+        2,3,Transmission and power train parts; at manufacturer,0.09230018343308832,0.016065891653621933,0.002965769493290854,2,"[0, 2]"\n
+        (...)
+        ```
+        
     Raises
     ------
     ValueError
