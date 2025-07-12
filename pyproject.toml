@@ -49,7 +49,6 @@ api = [
   "ecoinvent_interface",
 ]
 
-
 [project.urls]
 source = "https://github.com/brightway-lca/brightwebapp"
 homepage = "https://brightwebapp.readthedocs.io"

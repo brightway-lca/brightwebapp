@@ -219,8 +219,44 @@ class GraphTraversalRequest(BaseModel):
     max_calc: int = 100
 
 
-
-@router.post("/traversal/perform", response_class=Response)
+@router.post(
+    "/traversal/perform",
+    response_class=Response,
+    responses={
+        200: {
+            "description": "On success, a streaming response containing the graph traversal data as a CSV file.",
+            "content": {
+                "text/csv": {
+                    "schema": {
+                        "type": "string",
+                        "format": "binary",
+                    },
+                    "example": "UID,Scope,Name,SupplyAmount,...\n0,1,Activity A,1.0,...\n1,3,Activity B,0.5,..."
+                }
+            }
+        },
+        400: {
+            "description": "Raised if the cutoff value is too high and no graph edges are found.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "No edges found in the graph traversal. This may be due to a cutoff value that is too high, or a demand that does not lead to any edges."
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Raised for other unexpected exceptions, such as a missing demand code.",
+             "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "An unexpected error occurred: Node not found for code 'some_invalid_code'"
+                    }
+                }
+            }
+        }
+    }
+)
 async def run_graph_traversal(request: GraphTraversalRequest):
     """
     Performs a graph traversal and returns the result as a CSV file.
@@ -229,68 +265,9 @@ async def run_graph_traversal(request: GraphTraversalRequest):
     detailed JSON object specifying the demand, method, and calculation
     parameters. Upon success, it directly returns a CSV file for download.
 
-    Parameters
-    ----------
-    request : GraphTraversalRequest
-        A Pydantic model representing the structured request body. FastAPI
-        automatically validates the incoming JSON against this model. See the
-        documentation for the ``GraphTraversalRequest`` model for the exact
-        JSON structure required.
-
-    Returns
-    -------
-    fastapi.Response
-        On success, a streaming response containing the graph traversal data
-        as a CSV file. The HTTP ``Content-Disposition`` header is set to
-        'attachment', prompting a file download in browsers.
-
-    Raises
-    ------
-    HTTPException
-        - **400 Bad Request**: Raised if the underlying calculation function
-          returns a ``ValueError``. This can occur if, for example, the
-          cutoff value is too high and no graph edges are found. The response
-          body will contain the specific error message.
-        - **500 Internal Server Error**: Raised for any other unexpected
-          exception during processing, such as providing a demand ``code``
-          that does not exist in the Brightway database.
-
     See Also
     --------
     [`brightwebapp.traversal.perform_graph_traversal`](https://brightwebapp.readthedocs.io/en/latest/api/traversal/#brightwebapp.traversal.perform_graph_traversal)
-
-    Example
-    -------
-    To trigger this endpoint, you must send a ``POST`` request with a JSON
-    body. The following ``curl`` command demonstrates this.
-
-    **Request:**
-
-    ```bash
-    curl -X POST http://localhost:8080/traversal/perform \\
-    -H "Content-Type: application/json" \\
-    -d '{
-            "demand": [
-            { "code": "some_valid_code", "amount": 1 }
-            ],
-            "method": ["IMPACT World+ Midpoint", "Climate change", "GWP100"],
-            "cutoff": 0.005,
-            "biosphere_cutoff": 1e-5,
-            "max_calc": 10000
-        }' \\
-    --output traversal_result.csv
-    ```
-    On success, the command will be silent and the output will be saved to
-    the file ``traversal_result.csv``.
-
-    **Example Error Response (400 Bad Request):**
-
-    ```json
-    {
-        "detail": "No edges found in the graph traversal. This may be due to a cutoff value that is too high, or a demand that does not lead to any edges."
-    }
-    ```
-       
     """
     try:
         demand_dict = {
