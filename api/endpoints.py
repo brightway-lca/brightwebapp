@@ -37,6 +37,110 @@ class EcoinventSetupRequest(BaseModel):
     password: Optional[str] = Field(None, description="Ecoinvent password")
 
 
+@router.post(
+    "/setup/useeio-database",
+    status_code=202,
+    response_model=SetupResponse,
+    responses={
+        202: {
+            "description": "Confirmation that the setup task has been scheduled.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "accepted",
+                        "message": "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."
+                    }
+                }
+            }
+        }
+    }
+)
+async def setup_useeio_database(background_tasks: BackgroundTasks):
+    """
+    Schedules the USEEIO database setup as a background task.
+
+    This endpoint initiates a long-running process to download and install
+    the USEEIO-1.1 database if it is not already present. To avoid
+    request timeouts, the task is scheduled to run in the background.
+    The API responds immediately with a task ID, which can be used to
+    poll a status endpoint for completion.
+
+    See Also
+    --------
+    [`brightwebapp.brightway.load_and_set_useeio_project`](https://brightwebapp.readthedocs.io/en/latest/api/brightway/#brightwebapp.brightway.load_and_set_useeio_project)
+    ```
+    """
+    background_tasks.add_task(load_and_set_useeio_project)
+    return {
+        "status": "accepted",
+        "message": "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."
+    }
+
+
+@router.post(
+    "/setup/ecoinvent-database",
+    status_code=202,
+    response_model=SetupResponse,
+    responses={
+        202: {
+            "description": "Confirmation that the ecoinvent setup task has been scheduled.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "accepted",
+                        "message": "The ecoinvent database setup has been scheduled. This may take several minutes."
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Raised if the ecoinvent database needs to be downloaded but username and password are not provided.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Ecoinvent credentials are required but were not provided."}
+                }
+            }
+        }
+    }
+)
+async def setup_ecoinvent_database(
+    request: EcoinventSetupRequest, background_tasks: BackgroundTasks
+):
+    """
+    Schedules the ecoinvent 3.10 database setup as a background task.
+
+    This endpoint initiates the process to install the ecoinvent 3.10
+    database. If the database is not already installed, it will be
+    downloaded from the ecoinvent servers, which is a long-running task.
+    The process is run in the background to avoid request timeouts.
+
+    Notes
+    -----
+    Ecoinvent credentials are required if the database is not already installed.
+
+    See Also
+    --------
+    [`brightwebapp.brightway.load_and_set_ecoinvent_project`](https://brightwebapp.readthedocs.io/en/latest/api/brightway/#brightwebapp.brightway.load_and_set_ecoinvent_project)
+    """
+    if "ei_3_10" not in bd.projects:
+        if not request.username or not request.password:
+            raise HTTPException(
+                status_code=400,
+                detail="Ecoinvent project 'ei_3_10' is not installed. Please provide username and password to download it.",
+            )
+
+    background_tasks.add_task(
+        load_and_set_ecoinvent_project,
+        username=request.username,
+        password=request.password,
+    )
+
+    return {
+        "status": "accepted",
+        "message": "The ecoinvent 3.10 database setup has been scheduled. This may take several minutes.",
+    }
+
+
 class DemandItem(BaseModel):
     """
     Represents a single functional unit in a demand request.
@@ -114,133 +218,6 @@ class GraphTraversalRequest(BaseModel):
     biosphere_cutoff: float = 0.001
     max_calc: int = 100
 
-
-@router.post(
-    "/setup/useeio-database",
-    status_code=202, # HTTP 202 Accepted
-    response_model=SetupResponse
-)
-async def setup_useeio_database(background_tasks: BackgroundTasks):
-    """
-    Schedules the USEEIO database setup as a background task.
-
-    This endpoint initiates a long-running process to download and install
-    the USEEIO-1.1 database if it is not already present. To avoid
-    request timeouts, the task is scheduled to run in the background.
-    The API responds immediately with a task ID, which can be used to
-    poll a status endpoint for completion.
-
-    Parameters
-    ----------
-    background_tasks : BackgroundTasks
-        A FastAPI dependency that allows scheduling of background tasks.
-        The task is executed *after* the response has been sent. This is
-        injected by the framework and not provided by the API user.
-
-    Returns
-    -------
-    dict
-        A dictionary confirming that the task has been accepted for processing.
-        
-        | key            | value                                                                                     |
-        | -------------- | ----------------------------------------------------------------------------------------- |
-        | `status`       | `accepted`                                                                                |
-        | `message`      | "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."        |
-
-    Notes
-    -----
-    This function is exposed as a ``POST`` endpoint. It returns an HTTP
-    ``202 Accepted`` status code upon successfully scheduling the task.
-    This is a "fire-and-forget" operation. Once the task is scheduled,
-    the API provides no further status updates or results. To monitor the
-    actual progress of the download and installation, you may need to
-    check the application's server or container logs.
-
-    See Also
-    --------
-    [`brightwebapp.brightway.load_and_set_useeio_project`][]
-    ```
-    """
-    background_tasks.add_task(load_and_set_useeio_project)
-    return {
-        "status": "accepted",
-        "message": "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."
-    }
-
-
-@router.post(
-    "/setup/ecoinvent-database",
-    status_code=202, # HTTP 202 Accepted
-    response_model=SetupResponse,
-)
-async def setup_ecoinvent_database(
-    request: EcoinventSetupRequest, background_tasks: BackgroundTasks
-):
-    """
-    Schedules the ecoinvent 3.10 database setup as a background task.
-
-    This endpoint initiates the process to install the ecoinvent 3.10
-    database. If the database is not already installed, it will be
-    downloaded from the ecoinvent servers, which is a long-running task.
-    The process is run in the background to avoid request timeouts.
-
-    **Note:** Ecoinvent credentials are required if the database is not
-    already installed.
-
-    Parameters
-    ----------
-    request : EcoinventSetupRequest
-        A Pydantic model for the request body, which can contain
-        `username` and `password`.
-    background_tasks : BackgroundTasks
-        A FastAPI dependency for scheduling background tasks.
-
-    Returns
-    -------
-    dict
-        A dictionary confirming that the setup task has been scheduled.
-
-    Raises
-    ------
-    HTTPException
-        - **400 Bad Request**: Raised if the ecoinvent database needs to be
-          downloaded but `username` and `password` are not provided in the
-          request body.
-
-    Example
-    -------
-    The following `curl` command demonstrates how to call this endpoint.
-
-    **Request:**
-
-    ```bash
-    curl -X POST http://localhost:8080/setup/ecoinvent-database \\
-    -H "Content-Type: application/json" \\
-    -d '{
-            "username": "your-ecoinvent-username",
-            "password": "your-ecoinvent-password"
-        }'
-    ```
-    """
-    # If project is not installed, credentials are required to download it.
-    if "ei_3_10" not in bd.projects:
-        if not request.username or not request.password:
-            raise HTTPException(
-                status_code=400,
-                detail="Ecoinvent project 'ei_3_10' is not installed. Please provide username and password to download it.",
-            )
-
-    # Schedule the download and installation to run in the background.
-    background_tasks.add_task(
-        load_and_set_ecoinvent_project,
-        username=request.username,
-        password=request.password,
-    )
-
-    return {
-        "status": "accepted",
-        "message": "The ecoinvent 3.10 database setup has been scheduled. This may take several minutes.",
-    }
 
 
 @router.post("/traversal/perform", response_class=Response)

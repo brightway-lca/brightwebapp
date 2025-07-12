@@ -34,7 +34,6 @@ dependencies = [
   "bw2io==0.9.10",
   "bw2calc==2.1",
   "bw_graph_tools==0.6",
-  "ecoinvent_interface",
   "plotly"
 ]
 
@@ -47,6 +46,7 @@ testing = [
 api = [
   "fastapi",
   "uvicorn[standard]",
+  "ecoinvent_interface",
 ]
 
 
