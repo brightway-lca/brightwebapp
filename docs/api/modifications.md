@@ -1,1 +1,1 @@
-::: brightwebapp.modifications
+::: src.brightwebapp.modifications

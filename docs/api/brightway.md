@@ -1,1 +1,1 @@
-::: brightwebapp.brightway
+::: src.brightwebapp.brightway
