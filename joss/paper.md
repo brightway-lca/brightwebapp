@@ -35,13 +35,16 @@ bibliography: paper.bib
 
 # Statement of Need
 
-The Brightway framework [@Mutel2017] is a powerful tool for life-cycle assessment and supply chain analysis, but it traditionally requires a local Python environment to run. On the one hand, this can be a barrier for users who are not familiar with Python or do not have the necessary environment set up. On the other hand, it means that web applications and interactive dashboards using Brightway as their computational core require a server backend to run the Brightway framework, which can be complex to set up and maintain. A recent example is the `carculator` application [@sacchi2022and], which assesses the environmental impact of automobiles.`brightwebapp` addresses this issue by allowing users to run LCA and supply chain analysis applications directly in their web browser, without the need for a local installation.
+The Brightway framework [@Mutel2017] is a powerful tool for life-cycle assessment and supply chain analysis. However, it traditionally requires a local Python environment, which poses a challenge for web applications and interactive dashboards. These applications must either use a complex server backend to run the framework or rely on serving static, pre-computed data to users. A recent example of this is the carculator application [@sacchi2022and], which assesses the environmental impact of automobiles.
+`brightwebapp` addresses this issue by allowing users to run LCA and supply chain analysis applications directly in their web browser, eliminating the need for a local installation. This provides much more flexibility, enabling users to interactively explore different scenarios and parameters without waiting for server-side computations or being limited to static data.
 
 # Brightway and WebAssembly
 
-# Interactive Web Application
+During the development process, all Brightway dependencies were made compatible with Pyodide, either by replacing them with pure Python implementations or by replacing them with packages included in the Pyodide distribution. This ensures that the Brightway framework can run efficiently in the browser without requiring any additional server-side components.
 
-The package documentation allows users to compute fuel burn directly in the browser, without the need to install the package locally. This is achieved through the use of a [Pyodide](https://pyodide.org/en/stable/) Web Assembly Python kernel. The interactive documentation is available at [jetfuelburn.readthedocs.io](https://jetfuelburn.readthedocs.io).
+# Template for Web Applications
+
+`brightwebapp` provides a template for building Holoviz Panel web applications and dashboards that run the Brightway framework in the browser using WebAssembly. To achieve this, it uses [Pyodide](https://pyodide.org/en/stable/), a Python distribution for the browser and Node.js that allows running Python code in the browser. The implemented example application demonstrates how to use the Brightway framework to perform a supply chain analysis of a sector in the USEEIO database [@yang2017useeio].
 
 # Acknowledgements
 
