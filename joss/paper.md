@@ -36,7 +36,7 @@ bibliography: paper.bib
 # Statement of Need
 
 The Brightway framework [@Mutel2017] is a powerful tool for life-cycle assessment and supply chain analysis. However, it traditionally requires a local Python environment, which poses a challenge for web applications and interactive dashboards. These applications must either use a complex server backend to run the framework or rely on serving static, pre-computed data to users. A recent example of this is the carculator application [@sacchi2022and], which assesses the environmental impact of automobiles.
-`brightwebapp` addresses this issue by allowing users to run LCA and supply chain analysis applications directly in their web browser, eliminating the need for a local installation. This provides much more flexibility, enabling users to interactively explore different scenarios and parameters without waiting for server-side computations or being limited to static data.
+`brightwebapp` addresses this issue by allowing users to run LCA and supply chain analysis applications directly in their web browser, eliminating the need for a local installation. This grants users the flexibility to directly explore the impact of different LCA parameters.
 
 # Brightway and WebAssembly
 
