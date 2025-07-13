@@ -1,5 +1,7 @@
 # Web Application Development
 
+This page provides information on how to develop, debug and deploy Brightway-enabled web applications using the [Holoviz Panel library](https://panel.holoviz.org).
+
 ## Pyodide (Python in the Browser)
 
 ### Testing Pyodide Compatiblitiy

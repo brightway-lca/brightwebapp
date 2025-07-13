@@ -3,7 +3,7 @@
   "info": {
     "title": "BrightWebApp API",
     "description": "A web API for the BrightWebApp package.",
-    "version": "1.0.0"
+    "version": "0.0.7"
   },
   "paths": {
     "/setup/useeio-database": {
@@ -65,6 +65,60 @@
               "application/json": {
                 "example": {
                   "detail": "Ecoinvent credentials are required but were not provided."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/database/getnode": {
+      "get": {
+        "summary": "Get Node",
+        "description": "Retrieves metadata for a specific node in the Brightway database.",
+        "operationId": "get_node_database_getnode_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "On success, a JSON object containing the node's metadata.",
+            "content": {
+              "application/json": {
+                "schema": {},
+                "example": {
+                  "name": "electricity production, hard coal",
+                  "location": "DE",
+                  "unit": "kilowatt hour",
+                  "code": "38300de0f8f94767a9a3458b48392fd7"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Raised if the node with the specified code does not exist.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Node not found for code 'some_invalid_code'"
                 }
               }
             }

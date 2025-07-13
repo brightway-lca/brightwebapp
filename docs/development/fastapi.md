@@ -1,20 +1,31 @@
 # Docker and FastAPI
 
-## Docker Setup
+This page provides information on how to set up a Docker container with FastAPI for developing and testing Brightway-enabled web applications.
 
-Build the Docker image:
+## Docker Setup (static)
+
+Build the Docker image based on the provided `Dockerfile`:
 
 !!! note
-    Replace `<image_name>` with your desired image name.
+    Replace `brightapp` with your desired image name.
 
 ```bash
-docker build -t <image_name>:latest .
+docker build -t brightapp:latest .
 ```
 
 Spin up a docker container and bind the port 8000 to localhost:
 
 ```bash
-docker run -d -p 8000:8000 <image_name>:latest
+docker run -d -p 8000:8000 brightapp:latest
+```
+
+## Docker Setup (dynamic)
+
+For a more dynamic setup, you can use the `docker-compose.yml` file. This allows you to easily manage the container and its dependencies.
+It also mounts the current directory to the `/app` directory in the container, allowing you to develop and test your application without rebuilding the image every time you make a change.
+
+```bash
+docker-compose up --build
 ```
 
 ## Test USEEIO Database Operations
@@ -25,7 +36,7 @@ The USEEIO database can be tested with the FastAPI server. The following command
 curl -X POST http://localhost:8000/setup/useeio-database
 ```
 
-and:
+A simple path traversal calculation can be performed with the following command:
 
 ```bash
 curl -X POST 'http://localhost:8000/traversal/perform' \
@@ -58,9 +69,13 @@ curl -X POST http://localhost:8000/setup/ecoinvent-database \
     }'
 ```
 
+An arbitrary Ecoinvent node can be retrieved by its [`code` field](https://github.com/brightway-lca/brightway2-data/blob/2b71aec652d29d367ea2c166c78dafd4c90e1397/bw2data/utils.py#L355) with the following command:
+
 ```bash
 curl -X GET "http://localhost:8000/database/getnode?code=43ec7ae3d4442a295564dd4a24906725"
 ```
+
+A simple path traversal calculation can be performed with the following command:
 
 ```bash
 curl -X POST http://localhost:8000/traversal/perform \
@@ -85,12 +100,24 @@ curl -X POST http://localhost:8000/traversal/perform \
 --output traversal_result.csv
 ```
 
-## Update Documentation
+## Update API ([Swagger UI](https://swagger.io)) Documentation
 
-```bash
-uvicorn api.main:app --reload
+The FastAPI server provides an OpenAPI documentation endpoint that can be accessed at:
+
 ```
+http://localhost:8000/docs
+```
+
+with the underlying OpenAPI schema available at:
 
 ```
 http://localhost:8000/openapi.json
 ```
+
+A simple helper script `api/_generate_openapi_schema.py` is provided to generate the OpenAPI schema from the FastAPI server:
+
+```bash
+python -m api._generate_openapi_schema
+```
+
+The generated OpenAPI schema will be saved in a file named `openapi.json` in the current directory and should be moved to the `docs/api` directory to be included in the documentation.
