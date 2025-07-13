@@ -31,7 +31,7 @@ bibliography: paper.bib
 
 # Summary
 
-`brightwebapp` is a Python package that provides a framework for building complex life-cycle assessment (LCA) and supply chain analysis applications that run in the browser using WebAssembly (WASM). It leverages the [Brightway](https://brightway.dev) LCA framework and the [Holoviz Panel](https://panel.holoviz.org) library to create interactive web applications. The package is designed as a template for developers to create their own LCA and supply chain analysis applications, with a focus on ease of use and flexibility.
+`brightwebapp` is a Python package that provides a framework for building complex life-cycle assessment (LCA) and supply chain analysis applications that run in the browser using WebAssembly (WASM). It leverages the [Brightway](https://brightway.dev) LCA framework and the [Holoviz Panel](https://panel.holoviz.org) library to create interactive web applications. The package is designed as a template for developers to create their own LCA applications, with a focus on ease of use and flexibility.
 
 # Statement of Need
 
@@ -40,7 +40,7 @@ The Brightway framework [@Mutel2017] is a powerful tool for life-cycle assessmen
 
 # Brightway and WebAssembly
 
-During the development process, all Brightway dependencies were made compatible with Pyodide, either by replacing them with pure Python implementations or by replacing them with packages included in the Pyodide distribution. This ensures that the Brightway framework can run efficiently in the browser without requiring any additional server-side components.
+In developing `brightwebapp`, all Brightway dependencies were made compatible with Pyodide, either by replacing them with pure Python implementations or with packages included in the Pyodide distribution. This ensures that the Brightway framework can run efficiently in the browser without requiring any additional server-side components.
 
 # Template for Web Applications
 
