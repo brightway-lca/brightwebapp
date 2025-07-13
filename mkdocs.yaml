@@ -14,9 +14,10 @@ nav:
     - Brightway: 'api/brightway.md'
     - Tests: 'api/tests.md'
   - API (FastAPI):
-    - Endpoints: 'api/api.md'
-  - Web Application:
-    - Development: 'webapp.md'
+    - Endpoints: 'api/endpoints.md'
+  - Development:
+    - Web Application: 'development/webapp.md'
+    - FastAPI: 'development/fastapi.md'
   - Changelog: 'changelog.md'
 theme: # https://www.mkdocs.org/user-guide/choosing-your-theme/#readthedocs
   name: material
@@ -59,6 +60,7 @@ plugins:
   - markdown-exec
   - autorefs
   - include-markdown
+  - swagger-ui-tag
 markdown_extensions:
   - admonition
   - pymdownx.superfences:
@@ -91,10 +93,11 @@ extra_css:
   # https://cdnjs.com/libraries/KaTeX
   # unpkg is incredibly slow (17s to load the css file)
   - https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css
+  - https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.43.0/swagger-ui.css
   - _css/extra.css
 
 watch:
-  - brightwebapp
+  - src/brightwebapp
   - api
 
 extra:

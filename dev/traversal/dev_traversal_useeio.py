@@ -22,5 +22,5 @@ traversal = perform_graph_traversal(
     cutoff=0.01,
     biosphere_cutoff=0.01,
     max_calc=100,
-    return_format='csv'
+    return_format='dataframe'
 )

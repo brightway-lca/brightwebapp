@@ -1,0 +1,358 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BrightWebApp API",
+    "description": "A web API for the BrightWebApp package.",
+    "version": "0.0.7"
+  },
+  "paths": {
+    "/setup/useeio-database": {
+      "post": {
+        "summary": "Setup Useeio Database",
+        "description": "Schedules the USEEIO database setup as a background task.\n\nThis endpoint initiates a long-running process to download and install\nthe USEEIO-1.1 database if it is not already present. To avoid\nrequest timeouts, the task is scheduled to run in the background.\nThe API responds immediately with a task ID, which can be used to\npoll a status endpoint for completion.\n\nSee Also\n--------\n[`brightwebapp.brightway.load_and_set_useeio_project`](https://brightwebapp.readthedocs.io/en/latest/api/brightway/#brightwebapp.brightway.load_and_set_useeio_project)\n```",
+        "operationId": "setup_useeio_database_setup_useeio_database_post",
+        "responses": {
+          "202": {
+            "description": "Confirmation that the setup task has been scheduled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupResponse"
+                },
+                "example": {
+                  "status": "accepted",
+                  "message": "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/setup/ecoinvent-database": {
+      "post": {
+        "summary": "Setup Ecoinvent Database",
+        "description": "Schedules the ecoinvent 3.10 database setup as a background task.\n\nThis endpoint initiates the process to install the ecoinvent 3.10\ndatabase. If the database is not already installed, it will be\ndownloaded from the ecoinvent servers, which is a long-running task.\nThe process is run in the background to avoid request timeouts.\n\nNotes\n-----\nEcoinvent credentials are required if the database is not already installed.\n\nSee Also\n--------\n[`brightwebapp.brightway.load_and_set_ecoinvent_project`](https://brightwebapp.readthedocs.io/en/latest/api/brightway/#brightwebapp.brightway.load_and_set_ecoinvent_project)",
+        "operationId": "setup_ecoinvent_database_setup_ecoinvent_database_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EcoinventSetupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Confirmation that the ecoinvent setup task has been scheduled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupResponse"
+                },
+                "example": {
+                  "status": "accepted",
+                  "message": "The ecoinvent database setup has been scheduled. This may take several minutes."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Raised if the ecoinvent database needs to be downloaded but username and password are not provided.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Ecoinvent credentials are required but were not provided."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/database/getnode": {
+      "get": {
+        "summary": "Get Node",
+        "description": "Retrieves metadata for a specific node in the Brightway database.",
+        "operationId": "get_node_database_getnode_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "On success, a JSON object containing the node's metadata.",
+            "content": {
+              "application/json": {
+                "schema": {},
+                "example": {
+                  "name": "electricity production, hard coal",
+                  "location": "DE",
+                  "unit": "kilowatt hour",
+                  "code": "38300de0f8f94767a9a3458b48392fd7"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Raised if the node with the specified code does not exist.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "Node not found for code 'some_invalid_code'"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/traversal/perform": {
+      "post": {
+        "summary": "Run Graph Traversal",
+        "description": "Performs a graph traversal and returns the result as a CSV file.\n\nThis endpoint serves as the primary calculation interface. It accepts a\ndetailed JSON object specifying the demand, method, and calculation\nparameters. Upon success, it directly returns a CSV file for download.\n\nSee Also\n--------\n[`brightwebapp.traversal.perform_graph_traversal`](https://brightwebapp.readthedocs.io/en/latest/api/traversal/#brightwebapp.traversal.perform_graph_traversal)",
+        "operationId": "run_graph_traversal_traversal_perform_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GraphTraversalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "On success, a streaming response containing the graph traversal data as a CSV file.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "example": "UID,Scope,Name,SupplyAmount,...\n0,1,Activity A,1.0,...\n1,3,Activity B,0.5,..."
+              }
+            }
+          },
+          "400": {
+            "description": "Raised if the cutoff value is too high and no graph edges are found.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "No edges found in the graph traversal. This may be due to a cutoff value that is too high, or a demand that does not lead to any edges."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Raised for other unexpected exceptions, such as a missing demand code.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": "An unexpected error occurred: Node not found for code 'some_invalid_code'"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DemandItem": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "amount"
+        ],
+        "title": "DemandItem",
+        "description": "Represents a single functional unit in a demand request.\n\nThis model defines the structure for one item in the `demand` list\nof a graph traversal request. It specifies the unique code of an\nactivity and the amount to be assessed.\n\nAttributes\n----------\ncode: str\n    The unique string identifier (code) for the activity node in the Brightway database.\namount: float\n    The functional unit amount for this activity.\n\nExample\n-------\nThis is how a single demand item should be formatted in your JSON request:\n\n```json\n{\n    \"code\": \"some_valid_code_in_your_db\",\n    \"amount\": 1.0\n}\n```"
+      },
+      "EcoinventSetupRequest": {
+        "properties": {
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username",
+            "description": "Ecoinvent username"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password",
+            "description": "Ecoinvent password"
+          }
+        },
+        "type": "object",
+        "title": "EcoinventSetupRequest",
+        "description": "Represents a request for setting up the ecoinvent database.\n\nThis model defines the structure for providing credentials required\nto download and install the ecoinvent database if it is not already\npresent in the Brightway project list.\n\nAttributes\n----------\nusername: str, optional\n    The username for your ecoinvent account. Required only if the\n    database needs to be downloaded.\npassword: str, optional\n    The password for your ecoinvent account. Required only if the\n    database needs to be downloaded."
+      },
+      "GraphTraversalRequest": {
+        "properties": {
+          "demand": {
+            "items": {
+              "$ref": "#/components/schemas/DemandItem"
+            },
+            "type": "array",
+            "title": "Demand"
+          },
+          "method": {
+            "items": {},
+            "type": "array",
+            "title": "Method"
+          },
+          "cutoff": {
+            "type": "number",
+            "title": "Cutoff",
+            "default": 0.001
+          },
+          "biosphere_cutoff": {
+            "type": "number",
+            "title": "Biosphere Cutoff",
+            "default": 0.001
+          },
+          "max_calc": {
+            "type": "integer",
+            "title": "Max Calc",
+            "default": 100
+          }
+        },
+        "type": "object",
+        "required": [
+          "demand",
+          "method"
+        ],
+        "title": "GraphTraversalRequest",
+        "description": "Represents a request for performing a graph traversal.\n\nThis model defines the structure for a detailed request body\nto perform a graph traversal in the Brightway database. It includes\na list of demand items, the method for impact assessment, and\nvarious parameters for the traversal.\n\nAttributes\n----------\ndemand: list[DemandItem]\n    A list of demand items, each specifying a unique code and the amount to be assessed.\nmethod: tuple\n    A tuple specifying the impact assessment method, e.g., ('IMPACT World+ Midpoint', 'Climate change', 'GWP100').\ncutoff: float\n    The cutoff threshold for the graph traversal, default is 0.001.\nbiosphere_cutoff: float\n    The biosphere cutoff threshold for the graph traversal, default is 0.001.\nmax_calc: int\n    The maximum number of calculations to perform during the traversal, default is 100.\n\nExample\n-------\nThis is how a graph traversal request should be formatted in your JSON body:\n\n```json\n{\n    \"demand\": [\n        {\n            \"code\": \"some_valid_code_in_your_db\",\n            \"amount\": 1.0\n        }\n    ],\n    \"method\": [\"IMPACT World+ Midpoint\", \"Climate change\", \"GWP100\"],\n    \"cutoff\": 0.001,\n    \"biosphere_cutoff\": 0.001,\n    \"max_calc\": 100\n}\n```"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "SetupResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "title": "SetupResponse",
+        "description": "Response model for the setup endpoint."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

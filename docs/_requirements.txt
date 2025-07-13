@@ -3,3 +3,4 @@ mkdocstrings-python
 pymdown-extensions
 markdown-exec
 mkdocs-include-markdown-plugin
+mkdocs-swagger-ui-tag

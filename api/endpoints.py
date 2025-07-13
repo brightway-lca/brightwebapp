@@ -1,18 +1,144 @@
 from fastapi import APIRouter, Response, BackgroundTasks, HTTPException
-from io import StringIO
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Optional
 
+import logging
 
-from brightwebapp.brightway import load_and_set_useeio_project
+import bw2data as bd
+from brightwebapp.brightway import load_and_set_useeio_project, load_and_set_ecoinvent_project
 from brightwebapp.traversal import perform_graph_traversal
 
 router = APIRouter()
-
 
 class SetupResponse(BaseModel):
     """Response model for the setup endpoint."""
     status: str
     message: str
+
+
+class EcoinventSetupRequest(BaseModel):
+    """
+    Represents a request for setting up the ecoinvent database.
+
+    This model defines the structure for providing credentials required
+    to download and install the ecoinvent database if it is not already
+    present in the Brightway project list.
+
+    Attributes
+    ----------
+    username: str, optional
+        The username for your ecoinvent account. Required only if the
+        database needs to be downloaded.
+    password: str, optional
+        The password for your ecoinvent account. Required only if the
+        database needs to be downloaded.
+    """
+    username: Optional[str] = Field(None, description="Ecoinvent username")
+    password: Optional[str] = Field(None, description="Ecoinvent password")
+
+
+@router.post(
+    "/setup/useeio-database",
+    status_code=202,
+    response_model=SetupResponse,
+    responses={
+        202: {
+            "description": "Confirmation that the setup task has been scheduled.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "accepted",
+                        "message": "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."
+                    }
+                }
+            }
+        }
+    }
+)
+async def setup_useeio_database(background_tasks: BackgroundTasks):
+    """
+    Schedules the USEEIO database setup as a background task.
+
+    This endpoint initiates a long-running process to download and install
+    the USEEIO-1.1 database if it is not already present. To avoid
+    request timeouts, the task is scheduled to run in the background.
+    The API responds immediately with a task ID, which can be used to
+    poll a status endpoint for completion.
+
+    See Also
+    --------
+    [`brightwebapp.brightway.load_and_set_useeio_project`](https://brightwebapp.readthedocs.io/en/latest/api/brightway/#brightwebapp.brightway.load_and_set_useeio_project)
+    ```
+    """
+    background_tasks.add_task(load_and_set_useeio_project)
+    return {
+        "status": "accepted",
+        "message": "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."
+    }
+
+
+@router.post(
+    "/setup/ecoinvent-database",
+    status_code=202,
+    response_model=SetupResponse,
+    responses={
+        202: {
+            "description": "Confirmation that the ecoinvent setup task has been scheduled.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "status": "accepted",
+                        "message": "The ecoinvent database setup has been scheduled. This may take several minutes."
+                    }
+                }
+            }
+        },
+        400: {
+            "description": "Raised if the ecoinvent database needs to be downloaded but username and password are not provided.",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Ecoinvent credentials are required but were not provided."}
+                }
+            }
+        }
+    }
+)
+async def setup_ecoinvent_database(
+    request: EcoinventSetupRequest, background_tasks: BackgroundTasks
+):
+    """
+    Schedules the ecoinvent 3.10 database setup as a background task.
+
+    This endpoint initiates the process to install the ecoinvent 3.10
+    database. If the database is not already installed, it will be
+    downloaded from the ecoinvent servers, which is a long-running task.
+    The process is run in the background to avoid request timeouts.
+
+    Notes
+    -----
+    Ecoinvent credentials are required if the database is not already installed.
+
+    See Also
+    --------
+    [`brightwebapp.brightway.load_and_set_ecoinvent_project`](https://brightwebapp.readthedocs.io/en/latest/api/brightway/#brightwebapp.brightway.load_and_set_ecoinvent_project)
+    """
+    if "ei_3_10" not in bd.projects:
+        if not request.username or not request.password:
+            raise HTTPException(
+                status_code=400,
+                detail="Ecoinvent project 'ei_3_10' is not installed. Please provide username and password to download it.",
+            )
+
+    background_tasks.add_task(
+        load_and_set_ecoinvent_project,
+        username=request.username,
+        password=request.password,
+    )
+
+    return {
+        "status": "accepted",
+        "message": "The ecoinvent 3.10 database setup has been scheduled. This may take several minutes.",
+    }
 
 
 class DemandItem(BaseModel):
@@ -93,77 +219,90 @@ class GraphTraversalRequest(BaseModel):
     max_calc: int = 100
 
 
-@router.post(
-    "/setup/useeio-database",
-    status_code=202, # HTTP 202 Accepted
-    response_model=SetupResponse
+@router.get( # Changed from POST to GET
+    "/database/getnode",
+    responses={
+        200: {
+            "description": "On success, a JSON object containing the node's metadata.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "name": "electricity production, hard coal",
+                        "location": "DE",
+                        "unit": "kilowatt hour",
+                        "code": "38300de0f8f94767a9a3458b48392fd7"
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "Raised if the node with the specified code does not exist.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Node not found for code 'some_invalid_code'"
+                    }
+                }
+            }
+        }
+    }
 )
-async def setup_useeio_database(background_tasks: BackgroundTasks):
+async def get_node(code: str):
     """
-    Schedules the USEEIO database setup as a background task.
-
-    This endpoint initiates a long-running process to download and install
-    the USEEIO-1.1 database if it is not already present. To avoid
-    request timeouts, the task is scheduled to run in the background.
-    The API responds immediately with a task ID, which can be used to
-    poll a status endpoint for completion.
-
-    Parameters
-    ----------
-    background_tasks : BackgroundTasks
-        A FastAPI dependency that allows scheduling of background tasks.
-        The task is executed *after* the response has been sent. This is
-        injected by the framework and not provided by the API user.
-
-    Returns
-    -------
-    dict
-        A dictionary confirming that the task has been accepted for processing.
-        
-        | key            | value                                                                                     |
-        | -------------- | ----------------------------------------------------------------------------------------- |
-        | `status`       | `accepted`                                                                                |
-        | `message`      | "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."        |
-
-    Notes
-    -----
-    This function is exposed as a ``POST`` endpoint. It returns an HTTP
-    ``202 Accepted`` status code upon successfully scheduling the task.
-    This is a "fire-and-forget" operation. Once the task is scheduled,
-    the API provides no further status updates or results. To monitor the
-    actual progress of the download and installation, you may need to
-    check the application's server or container logs.
-
-    See Also
-    --------
-    [`brightwebapp.brightway.load_and_set_useeio_project`][]
-
-    Example
-    -------
-    To trigger this endpoint, you can use a tool like ``curl``.
-
-    **Request:**
-
-    ```bash
-    curl -X POST http://localhost:8080/setup/useeio-database
-    ```
-    **Immediate Response (202 Accepted):**
-
-    ```json
-    {
-        "status": "accepted",
-        "message": "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."
-    }
-    ```
+    Retrieves metadata for a specific node in the Brightway database.
     """
-    background_tasks.add_task(load_and_set_useeio_project)
-    return {
-        "status": "accepted",
-        "message": "The USEEIO-1.1 database setup has been scheduled. This may take several minutes."
+    logging.warning(f"Attempting to get node in project: {bd.projects.current}")
+    try:
+        # Correctly call get_node with a keyword argument
+        node = bd.get_node(code=code)
+        return {
+            "name": node.get('name'),
+            "location": node.get('location'),
+            "unit": node.get('unit'),
+            "code": node.get('code')
+        }
+    except: # Catches NodeNotFound or any other error from get_node
+        raise HTTPException(status_code=404, detail=f"Node not found for code '{code}'")
+
+
+@router.post(
+    "/traversal/perform",
+    response_class=Response,
+    responses={
+        200: {
+            "description": "On success, a streaming response containing the graph traversal data as a CSV file.",
+            "content": {
+                "text/csv": {
+                    "schema": {
+                        "type": "string",
+                        "format": "binary",
+                    },
+                    "example": "UID,Scope,Name,SupplyAmount,...\n0,1,Activity A,1.0,...\n1,3,Activity B,0.5,..."
+                }
+            }
+        },
+        400: {
+            "description": "Raised if the cutoff value is too high and no graph edges are found.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "No edges found in the graph traversal. This may be due to a cutoff value that is too high, or a demand that does not lead to any edges."
+                    }
+                }
+            }
+        },
+        500: {
+            "description": "Raised for other unexpected exceptions, such as a missing demand code.",
+             "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "An unexpected error occurred: Node not found for code 'some_invalid_code'"
+                    }
+                }
+            }
+        }
     }
-
-
-@router.post("/traversal/perform", response_class=Response)
+)
 async def run_graph_traversal(request: GraphTraversalRequest):
     """
     Performs a graph traversal and returns the result as a CSV file.
@@ -172,68 +311,9 @@ async def run_graph_traversal(request: GraphTraversalRequest):
     detailed JSON object specifying the demand, method, and calculation
     parameters. Upon success, it directly returns a CSV file for download.
 
-    Parameters
-    ----------
-    request : GraphTraversalRequest
-        A Pydantic model representing the structured request body. FastAPI
-        automatically validates the incoming JSON against this model. See the
-        documentation for the ``GraphTraversalRequest`` model for the exact
-        JSON structure required.
-
-    Returns
-    -------
-    fastapi.Response
-        On success, a streaming response containing the graph traversal data
-        as a CSV file. The HTTP ``Content-Disposition`` header is set to
-        'attachment', prompting a file download in browsers.
-
-    Raises
-    ------
-    HTTPException
-        - **400 Bad Request**: Raised if the underlying calculation function
-          returns a ``ValueError``. This can occur if, for example, the
-          cutoff value is too high and no graph edges are found. The response
-          body will contain the specific error message.
-        - **500 Internal Server Error**: Raised for any other unexpected
-          exception during processing, such as providing a demand ``code``
-          that does not exist in the Brightway database.
-
     See Also
     --------
-    [`brightwebapp.traversal.perform_graph_traversal`][]
-
-    Example
-    -------
-    To trigger this endpoint, you must send a ``POST`` request with a JSON
-    body. The following ``curl`` command demonstrates this.
-
-    **Request:**
-
-    ```bash
-    curl -X POST http://localhost:8080/traversal/perform \\
-    -H "Content-Type: application/json" \\
-    -d '{
-            "demand": [
-            { "code": "some_valid_code", "amount": 1 }
-            ],
-            "method": ["IMPACT World+ Midpoint", "Climate change", "GWP100"],
-            "cutoff": 0.005,
-            "biosphere_cutoff": 1e-5,
-            "max_calc": 10000
-        }' \\
-    --output traversal_result.csv
-    ```
-    On success, the command will be silent and the output will be saved to
-    the file ``traversal_result.csv``.
-
-    **Example Error Response (400 Bad Request):**
-
-    ```json
-    {
-        "detail": "No edges found in the graph traversal. This may be due to a cutoff value that is too high, or a demand that does not lead to any edges."
-    }
-    ```
-       
+    [`brightwebapp.traversal.perform_graph_traversal`](https://brightwebapp.readthedocs.io/en/latest/api/traversal/#brightwebapp.traversal.perform_graph_traversal)
     """
     try:
         demand_dict = {
@@ -260,4 +340,6 @@ async def run_graph_traversal(request: GraphTraversalRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        # Add this to see the exact error before it's hidden by HTTPException
+        print(f"ERROR: An exception occurred: {e}")
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
