@@ -1,26 +1,15 @@
-# Panel
 import panel as pn
 pn.extension(notifications=True)
 pn.extension(design='material')
 pn.extension('plotly')
 pn.extension('tabulator')
 
-# BrightWebApp
-from brightwebapp.brightway import (
-    load_and_set_useeio_project,
-    brightway_wasm_database_storage_workaround
-)
+from brightwebapp.brightway import load_and_set_useeio_project, brightway_wasm_database_storage_workaround
 from brightwebapp.traversal import perform_graph_traversal
 from brightwebapp.visualization import create_plotly_figure_piechart
 import bw2data as bd
 
-
-# Plotting
-import plotly
-
-# Data Science
 import pandas as pd
-
 
 brightway_wasm_database_storage_workaround()
 
@@ -33,15 +22,13 @@ class panel_lca_class:
 
     Notes
     -----
-    Why this class?
-    Because for some reason data (dataframes, etc.) 
-    can only be stored in a class.
-    Therefore, functions bound to buttons etc., 
-    can only be methods of the class.
+    Why this class?  
+    Because in this Panel setup, data (dataframes, etc.) can only be stored in a class.
+    Therefore, functions bound to buttons etc., can only be methods of the class.
 
     See Also
     --------
-    https://discourse.holoviz.org/t/update-global-variable-through-function-bound-with-on-click/
+    [Update global variable through function bound with ‘on_click’](https://discourse.holoviz.org/t/update-global-variable-through-function-bound-with-on-click/)
     """
     brightway_wasm_database_storage_workaround()
     def __init__(self):
@@ -56,15 +43,23 @@ class panel_lca_class:
         self.chosen_amount = 0
         self.lca = None
         self.scope_dict = {'Scope 1': 0, 'Scope 2': 0, 'Scope 3': 0}
-        self.graph_traversal_cutoff = 0.123
+        self.graph_traversal_cutoff = 0.1
         self.graph_traversal = {}
         self.df_graph_traversal_nodes = None
         self.df_graph_traversal_edges = None
-        self.df_tabulator_from_traversal = None
-        self.df_tabulator_from_user = None
+        #self.df_tabulator_from_traversal = None
+        #self.df_tabulator_from_user = None
         self.df_tabulator = None # nota bene: gets updated automatically when cells in the tabulator are edited # https://panel.holoviz.org/reference/widgets/Tabulator.html#editors-editing
         self.bool_user_provided_data = False
 
+
+    def reset_results(self, event):
+        """
+        Resets all results to initial state.  
+        Does not reset the database or the chosen activity/method/amount.
+        """
+        self.scope_dict = {'Scope 1': 0, 'Scope 2': 0, 'Scope 3': 0}
+        self.df_tabulator = pd.DataFrame([['']], columns=['Data will appear here after calculations...'])
 
     def set_db(self, event):
         """
@@ -78,7 +73,8 @@ class panel_lca_class:
 
     def set_list_db_products(self, event):
         """
-        Sets `list_db_products` to a list of product names from the database for use in the autocomplete widget.
+        Sets `list_db_products` to a list of product names
+        from the database for use in the autocomplete widget.
         """
         self.list_db_products = [node['name'] for node in self.db if 'product' in node['type']]
     
@@ -163,7 +159,8 @@ class panel_lca_class:
 
     def set_chosen_activity(self, event):
         """
-        Sets `chosen_activity` to the `bw2data.backends.proxies.Activity` object of the chosen product from the autocomplete widget.
+        Sets `chosen_activity` to the `bw2data.backends.proxies.Activity` object
+        of the chosen product from the autocomplete widget.
         """
         self.chosen_activity: Activity = bd.utils.get_node(
             database = self.db_name,
@@ -175,14 +172,17 @@ class panel_lca_class:
 
     def set_chosen_method_and_unit(self, event):
         """
-        Sets `chosen_method` to the (tuple) corresponding to the chosen method string from the select widget.
+        Sets `chosen_method` to the (tuple) corresponding to the chosen method string
+        from the select widget.
 
         Example:
         --------
+        ```
         widget_select_method.value = ('HRSP', 'Human Health: Respiratory effects', '[kg PM2.5 eq]')
         widget_select_method.value[0] = 'HRSP'
         dict_db_methods = {'HRSP': [('Impact Potential', 'HRSP'), 'Human Health - Respiratory effects', '[kg PM2.5 eq]']}
         dict_db_methods['HRSP'][0] = ('Impact Potential', 'HRSP') # which is the tuple that bd.Method needs
+        ```
         """
         self.chosen_method = bd.Method(self.dict_db_methods[widget_select_method.value[0]][0])
         self.chosen_method_unit = widget_select_method.value[2]
@@ -203,9 +203,9 @@ class panel_lca_class:
         self.graph_traversal_cutoff = widget_float_slider_cutoff.value / 100
 
 
-    def trigger_graph_traversal(self, event):
+    def run_graph_traversal(self, event):
         try:
-            self.df_tabulator_from_traversal = perform_graph_traversal(
+            self.df_tabulator = perform_graph_traversal(
                 demand={self.chosen_activity: self.chosen_amount},
                 method=self.chosen_method.name,
                 cutoff=self.graph_traversal_cutoff,
@@ -219,9 +219,10 @@ class panel_lca_class:
 
     def determine_scope_2(self, event):
         """
-        sets "Scope" to 2 for all rows where the "Name" column equals "Electricity; at consumer"
+        Sets "Scope" to 2 for all rows where the "Name" column equals "Electricity; at consumer"
         """
-        self.df_tabulator_from_traversal.loc[self.df_tabulator_from_traversal['Name'] == 'Electricity; at consumer', 'Scope'] = 2
+        if self.df_tabulator is not None and 'Scope' in self.df_tabulator.columns and 'Name' in self.df_tabulator.columns:
+            self.df_tabulator.loc[self.df_tabulator['Name'] == 'Electricity; at consumer', 'Scope'] = 2
 
 
     def set_table_filename(self, event):
@@ -255,11 +256,24 @@ class panel_lca_class:
             'Scope 3': 0
         }
         
-        dict_scope['Scope 1'] = self.widget_tabulator.value.loc[(df['Scope'] == 1)]['Burden(Direct)'].values.sum()
-        dict_scope['Scope 2'] = self.widget_tabulator.value.loc[(df['Scope'] == 2)]['Burden(Direct)'].values.sum()
-        dict_scope['Scope 3'] = self.widget_tabulator.value['Burden(Direct)'].sum() - dict_scope['Scope 1'] - dict_scope['Scope 2']
+        if self.df_tabulator is not None and 'Scope' in self.df_tabulator.columns and 'Name' in self.df_tabulator.columns:
+            dict_scope['Scope 1'] = self.df_tabulator.query('Scope == 1')['Burden(Direct)'].sum()
+            dict_scope['Scope 2'] = self.df_tabulator.query('Scope == 2')['Burden(Direct)'].sum()
+            dict_scope['Scope 3'] = self.df_tabulator['Burden(Direct)'].sum() - dict_scope['Scope 1'] - dict_scope['Scope 2']
 
         panel_lca_class_instance.scope_dict = dict_scope
+
+
+    def determine_lca_score(self, event):
+        """
+        Performs a Brightway LCA calculation and sets the `lca` attribute to the resulting `bw2calc.LCA` object.
+        """
+        if len(self.df_tabulator.index) > 1:
+            score = self.df_tabulator['Burden(Direct)'].sum()
+        else:
+            score = 0
+        return score
+
 
 panel_lca_class_instance = panel_lca_class()
 
@@ -277,6 +291,8 @@ def button_action_load_database(event):
 
 
 def button_action_perform_lca(event):
+    if panel_lca_class_instance.df_tabulator is not None:
+        panel_lca_class_instance.reset_results(event)
     if widget_autocomplete_product.value == '':
         pn.state.notifications.error('Please select a reference product first!', duration=5000)
         return
@@ -287,21 +303,20 @@ def button_action_perform_lca(event):
     panel_lca_class_instance.set_chosen_method_and_unit(event)
     panel_lca_class_instance.set_chosen_amount(event)
     panel_lca_class_instance.set_graph_traversal_cutoff(event)
-    panel_lca_class_instance.trigger_graph_traversal(event)
+    panel_lca_class_instance.run_graph_traversal(event)
     panel_lca_class_instance.determine_scope_2(event)
     widget_number_lca_score.format = f'{{value:,.3f}} {panel_lca_class_instance.chosen_method_unit}'
-    widget_tabulator.value = panel_lca_class_instance.df_tabulator_from_traversal
-    widget_number_lca_score.value = panel_lca_class_instance.df_tabulator_from_traversal['Burden(Direct)'].sum()
-    widget_plotly_figure_piechart.object = create_plotly_figure_piechart(panel_lca_class_instance.scope_dict)
+    widget_tabulator.value = panel_lca_class_instance.df_tabulator
+    widget_number_lca_score.value = panel_lca_class_instance.determine_lca_score(event)
     pn.state.notifications.success('Completed LCA score calculation!', duration=5000)
     perform_scope_analysis(event)
 
 
 def perform_scope_analysis(event):
     pn.state.notifications.info('Performing Scope Analysis...', duration=5000)
-    panel_lca_class_instance.determine_scope_emissions(event)
-    chart.object = create_plotly_figure_piechart(panel_lca_class_instance.scope_dict)
     panel_lca_class_instance.set_table_filename(event)
+    panel_lca_class_instance.determine_scope_emissions(event)
+    widget_plotly_figure_piechart.object = create_plotly_figure_piechart(panel_lca_class_instance.scope_dict)
     pn.state.notifications.success('Scope Analysis Complete!', duration=5000)
 
 
@@ -402,7 +417,6 @@ col1 = pn.Column(
 )
 
 # COLUMN 2 ####################################################################
-
 
 def highlight_tabulator_cells(tabulator_row):
     """
