@@ -1,5 +1,15 @@
 # `brightwebapp` Changelog
 
+## 0.0.8 (2025-09-15)
+
+### New Features
+
+- Moved the `create_plotly_figure_piechart` function from the `app/index.py` file to the `brightwebapp/visualization.py` module for better modularity and reusability.
+
+### Bug Fixes
+
+- Adjusted `app/index.py` to fail LCA calculation gracefully with notification if no nodes are found in the graph traversal (due to high cutoff value), instead of throwing an error.
+
 ## 0.0.7 (2025-07-13)
 
 First release including the FastAPI `api` module.
