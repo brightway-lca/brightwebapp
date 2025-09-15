@@ -5,7 +5,8 @@ import pandas as pd
 import numpy as np
 
 from brightwebapp.modifications import (
-    _create_user_input_columns
+    _create_user_input_columns,
+    _update_burden_intensity_based_on_user_data
 )
 
 @pytest.fixture
@@ -17,6 +18,130 @@ def df_original() -> pd.DataFrame:
         'OtherColumn': ['A', 'B', 'C']  # To ensure other columns are preserved
     }
     return pd.DataFrame(data)
+
+
+import pandas as pd
+import numpy as np
+import pytest
+from pandas.testing import assert_frame_equal
+
+# Assuming the function to be tested is in the same file or imported
+# from your_module import _update_burden_intensity_based_on_user_data
+
+class TestUpdateBurdenIntensity:
+    """
+    Tests the `_update_burden_intensity_based_on_user_data` function.
+    """
+
+    def test_basic_case_with_mixed_overrides(self):
+        """
+        Tests the standard case where some values are overridden and others are not.
+        This mirrors the example in the function's docstring.
+        """
+        input_df = pd.DataFrame({
+            'UID': [0, 1, 2],
+            'BurdenIntensity': [0.1, 0.5, 0.3],
+            'BurdenIntensity_USER': [np.nan, 0.25, np.nan]
+        })
+        expected_df = pd.DataFrame({
+            'UID': [0, 1, 2],
+            'BurdenIntensity': [0.1, 0.25, 0.3]
+        })
+
+        result_df = _update_burden_intensity_based_on_user_data(input_df)
+        assert_frame_equal(result_df, expected_df)
+
+
+    def test_no_overrides_provided(self):
+        """
+        Tests that the original data is preserved when the `_USER` column is all NaN.
+        """
+        input_df = pd.DataFrame({
+            'UID': [0, 1, 2],
+            'BurdenIntensity': [0.1, 0.5, 0.3],
+            'BurdenIntensity_USER': [np.nan, np.nan, np.nan]
+        })
+        expected_df = pd.DataFrame({
+            'UID': [0, 1, 2],
+            'BurdenIntensity': [0.1, 0.5, 0.3]
+        })
+
+        result_df = _update_burden_intensity_based_on_user_data(input_df)
+        assert_frame_equal(result_df, expected_df)
+
+
+    def test_all_values_overridden(self):
+        """
+        Tests that all original values are replaced when the `_USER` column is fully populated.
+        """
+        input_df = pd.DataFrame({
+            'UID': [0, 1, 2],
+            'BurdenIntensity': [0.1, 0.5, 0.3],
+            'BurdenIntensity_USER': [1.1, 1.5, 1.3]
+        })
+        expected_df = pd.DataFrame({
+            'UID': [0, 1, 2],
+            'BurdenIntensity': [1.1, 1.5, 1.3]
+        })
+
+        result_df = _update_burden_intensity_based_on_user_data(input_df)
+        assert_frame_equal(result_df, expected_df)
+
+
+    def test_zero_as_override_value(self):
+        """
+        Tests that `0` is correctly treated as a valid override value.
+        """
+        input_df = pd.DataFrame({
+            'UID': [0, 1],
+            'BurdenIntensity': [0.1, 0.5],
+            'BurdenIntensity_USER': [0.0, np.nan]
+        })
+        expected_df = pd.DataFrame({
+            'UID': [0, 1],
+            'BurdenIntensity': [0.0, 0.5]
+        })
+
+        result_df = _update_burden_intensity_based_on_user_data(input_df)
+        assert_frame_equal(result_df, expected_df)
+
+
+    def test_empty_dataframe(self):
+        """
+        Tests that the function correctly handles an empty DataFrame.
+        """
+        input_df = pd.DataFrame({
+            'UID': pd.Series([], dtype='int'),
+            'BurdenIntensity': pd.Series([], dtype='float'),
+            'BurdenIntensity_USER': pd.Series([], dtype='float')
+        })
+        expected_df = pd.DataFrame({
+            'UID': pd.Series([], dtype='int'),
+            'BurdenIntensity': pd.Series([], dtype='float')
+        })
+
+        result_df = _update_burden_intensity_based_on_user_data(input_df)
+        assert_frame_equal(result_df, expected_df)
+
+
+    def test_preserves_other_columns(self):
+        """
+        Tests that other columns in the DataFrame are unaffected.
+        """
+        input_df = pd.DataFrame({
+            'UID': [0, 1],
+            'SupplyAmount': [100, 200], # This column should be preserved
+            'BurdenIntensity': [0.1, 0.5],
+            'BurdenIntensity_USER': [0.9, np.nan]
+        })
+        expected_df = pd.DataFrame({
+            'UID': [0, 1],
+            'SupplyAmount': [100, 200],
+            'BurdenIntensity': [0.9, 0.5]
+        })
+
+        result_df = _update_burden_intensity_based_on_user_data(input_df)
+        assert_frame_equal(result_df, expected_df[result_df.columns])
 
 
 class TestCreateUserInputColumns:
