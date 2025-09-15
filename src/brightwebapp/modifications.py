@@ -174,31 +174,99 @@ def _update_production_based_on_user_data(df: pd.DataFrame) -> pd.DataFrame:
 
     df_filtered = df[~df['SupplyAmount_USER'].isna()]
     dict_user_input = df_filtered.set_index('UID').to_dict()['SupplyAmount_USER']
-    
+    dict_original_amount = df.set_index('UID')['SupplyAmount'].to_dict()
     """
     For the example DataFrame from the docstrings above,
-    the dict_user_input would be:
+    `df_filtered` would be:
+
+    | UID | SupplyAmount | SupplyAmount_USER | Branch        |
+    |-----|--------------|-------------------|---------------|
+    | 1   | 0.5          | 0.25              | [0,1]         |
+    | 4   | 0.1          | 0.18              | [0,1,2,4]     |
+
+    `dict_user_input` would be:
 
     dict_user_input = {
         1: 0.25,
         4: 0.18
     }
+
+    and `dict_original_amount` would be:
+
+    dict_original_amount = {
+        0: 1,
+        1: 0.5,
+        2: 0.2,
+        3: 0.1,
+        4: 0.1,
+        5: 0.05,
+        6: 0.01
+    }
     """
 
     df = df.copy(deep=True)
-    def multiplier(row):
-        if not isinstance(row['Branch'], list):
-            return row['SupplyAmount']
-        elif (
-            not np.isnan(row['SupplyAmount_USER'])
-        ):
+    def multiplier(row) -> float:
+        """
+        Given a row of the DataFrame, determines the new production amount
+        based on the user-provided production amounts upstream of the node.
+
+        Given a row of the kind:
+
+        | UID | SupplyAmount | SupplyAmount_USER | Branch        |
+        |-----|--------------|-------------------|---------------|
+        | 2   | 0.2          | NaN               | [0,1,2]       |
+
+        and `dict_user_input` of the kind:
+
+        dict_user_input = {
+            1: 0.25,
+            4: 0.18
+        }
+
+        the function returns 
+
+        0.2 * (0.25 / 0.5) = 0.1
+
+        because node 2 is upstream of node 1, which has a user-provided production amount of 0.25.
+        
+        Given a row of the kind:
+
+        | UID | SupplyAmount | SupplyAmount_USER | Branch        |
+        |-----|--------------|-------------------|---------------|
+        | 5   | 0.05         | NaN               | [0,1,2,4,5]   |
+
+        and the same `dict_user_input`, the function returns
+
+        0.05 * (0.18 / 0.1) = 0.09
+
+        because node 5 is upstream of node 4, which has a user-provided production amount of 0.18.
+
+        Parameters
+        ----------
+        row : pd.Series
+            A row of the DataFrame.
+
+        Returns
+        -------
+        float
+            The new production amount for the given row.
+        """
+        if not pd.isna(row['SupplyAmount_USER']):
             return row['SupplyAmount_USER']
+        elif not isinstance(row['Branch'], list):
+            return row['SupplyAmount']
         elif (
             set(dict_user_input.keys()).intersection(row['Branch'])
         ):
             for branch_UID in reversed(row['Branch']):
                 if branch_UID in dict_user_input.keys():
-                    return row['SupplyAmount'] * dict_user_input[branch_UID]
+                    original_upstream = dict_original_amount[branch_UID]
+                    user_upstream = dict_user_input[branch_UID]
+
+                    if original_upstream == 0:
+                        return 0
+                    else:
+                        return row['SupplyAmount'] * (user_upstream / original_upstream)
         else:
             return row['SupplyAmount']
 

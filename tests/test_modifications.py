@@ -8,7 +8,8 @@ from brightwebapp.modifications import (
     _create_user_input_columns,
     _update_burden_intensity_based_on_user_data,
     _update_burden_based_on_user_data,
-    _determine_edited_rows
+    _determine_edited_rows,
+    _update_production_based_on_user_data
 )
 
 @pytest.fixture
@@ -20,6 +21,144 @@ def df_original() -> pd.DataFrame:
         'OtherColumn': ['A', 'B', 'C']  # To ensure other columns are preserved
     }
     return pd.DataFrame(data)
+
+@pytest.fixture
+def base_df() -> pd.DataFrame:
+    """Provides the main DataFrame used in the docstring for tests."""
+    data = {
+        'UID': [0, 1, 2, 3, 4, 5, 6],
+        'SupplyAmount': [1.0, 0.5, 0.2, 0.1, 0.1, 0.05, 0.01],
+        'SupplyAmount_USER': [np.nan, 0.25, np.nan, np.nan, 0.18, np.nan, np.nan],
+        'Branch': [
+            np.nan,
+            [0, 1],
+            [0, 1, 2],
+            [0, 3],
+            [0, 1, 2, 4],
+            [0, 1, 2, 4, 5],
+            [0, 1, 2, 4, 5, 6]
+        ]
+    }
+    return pd.DataFrame(data)
+
+
+class TestUpdateProductionBasedOnUserData:
+    """
+    Test suite for the `_update_production_based_on_user_data` function.
+    """
+
+    def test_main_scenario_from_docstring(self, base_df):
+        """
+        Tests the primary use case described in the function's docstring.
+        It verifies direct updates, downstream propagation, and the "most recent" upstream rule.
+        """
+        expected_data = {
+            'UID': [0, 1, 2, 3, 4, 5, 6],
+            'SupplyAmount': [
+                1.0,                     # Unchanged root
+                0.25,                    # Direct user update
+                0.2 * (0.25 / 0.5),      # Scaled by UID 1: 0.1
+                0.1,                     # Unaffected branch
+                0.18,                    # Direct user update
+                0.05 * (0.18 / 0.1),     # Scaled by UID 4 (most recent): 0.09
+                0.01 * (0.18 / 0.1)      # Scaled by UID 4 (most recent): 0.018
+            ],
+            'Branch': [
+                np.nan,
+                [0, 1],
+                [0, 1, 2],
+                [0, 3],
+                [0, 1, 2, 4],
+                [0, 1, 2, 4, 5],
+                [0, 1, 2, 4, 5, 6]
+            ]
+        }
+        expected_df = pd.DataFrame(expected_data)
+
+        result_df = _update_production_based_on_user_data(base_df)
+
+        assert_frame_equal(result_df, expected_df, atol=1e-9)
+
+    def test_no_user_input_makes_no_changes(self, base_df):
+        """
+        Tests that if the 'SupplyAmount_USER' column is all NaN, the function
+        returns the original 'SupplyAmount' values unchanged.
+        """
+        df_no_user_input = base_df.copy()
+        df_no_user_input['SupplyAmount_USER'] = np.nan
+        
+        expected_df = df_no_user_input.drop(columns=['SupplyAmount_USER'])
+
+        result_df = _update_production_based_on_user_data(df_no_user_input)
+
+        assert_frame_equal(result_df, expected_df)
+
+    def test_empty_dataframe_input(self):
+        """
+        Tests that the function handles an empty DataFrame gracefully.
+        """
+        empty_df = pd.DataFrame(columns=['UID', 'SupplyAmount', 'SupplyAmount_USER', 'Branch'])
+        expected_df = pd.DataFrame(columns=['UID', 'SupplyAmount', 'Branch'])
+        
+        # FIX: Ensure the 'SupplyAmount' column has the expected float64 dtype.
+        expected_df['SupplyAmount'] = expected_df['SupplyAmount'].astype('float64')
+
+        result_df = _update_production_based_on_user_data(empty_df)
+
+        assert_frame_equal(result_df, expected_df)
+
+    def test_division_by_zero_upstream_sets_downstream_to_zero(self):
+        """
+        Tests the critical edge case where an upstream node has an original
+        SupplyAmount of 0. All downstream nodes should be updated to 0.
+        """
+        data = {
+            'UID': [0, 1, 2],
+            'SupplyAmount': [10.0, 0.0, 5.0],
+            'SupplyAmount_USER': [np.nan, 2.0, np.nan],
+            'Branch': [np.nan, [0, 1], [0, 1, 2]]
+        }
+        df = pd.DataFrame(data)
+
+        expected_data = {
+            'UID': [0, 1, 2],
+            'SupplyAmount': [10.0, 2.0, 0.0], # UID 2 becomes 0 due to division by zero
+            'Branch': [np.nan, [0, 1], [0, 1, 2]]
+        }
+        expected_df = pd.DataFrame(expected_data)
+
+        result_df = _update_production_based_on_user_data(df)
+
+        assert_frame_equal(result_df, expected_df)
+
+    def test_user_input_on_root_node_propagates_correctly(self):
+        """
+        Tests that if the root node (UID 0) has a user value, it correctly
+        propagates to all its direct and indirect children.
+        """
+        data = {
+            'UID': [0, 1, 2],
+            'SupplyAmount': [100.0, 50.0, 20.0],
+            'SupplyAmount_USER': [50.0, np.nan, np.nan],
+            'Branch': [np.nan, [0, 1], [0, 2]]
+        }
+        df = pd.DataFrame(data)
+        
+        # Factor is 50.0 / 100.0 = 0.5
+        expected_data = {
+            'UID': [0, 1, 2],
+            'SupplyAmount': [
+                50.0,           # Direct update
+                50.0 * 0.5,     # Scaled by root
+                20.0 * 0.5      # Scaled by root
+            ],
+            'Branch': [np.nan, [0, 1], [0, 2]]
+        }
+        expected_df = pd.DataFrame(expected_data)
+        
+        result_df = _update_production_based_on_user_data(df)
+        
+        assert_frame_equal(result_df, expected_df, atol=1e-9)
 
 
 class TestDetermineEditedRows:
