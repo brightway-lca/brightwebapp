@@ -234,7 +234,7 @@ def _update_burden_based_on_user_data(df: pd.DataFrame) -> pd.DataFrame:
 def _determine_edited_rows(df: pd.DataFrame) -> pd.DataFrame:
     """
     Given a dataframe with at least columns `'SupplyAmount_USER', 'BurdenIntensity_USER'`,
-    returns a DataFrame with a new column that indicates whether XXXXXX
+    returns a DataFrame with a new column that indicates whether a row has been edited by the user.
 
     For instance, given a DataFrame of the kind:
 
@@ -256,4 +256,3 @@ def _determine_edited_rows(df: pd.DataFrame) -> pd.DataFrame:
     """
     df['Edited?'] = df[['SupplyAmount_USER', 'BurdenIntensity_USER']].notnull().any(axis=1)
     return df
-

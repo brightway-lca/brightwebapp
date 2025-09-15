@@ -7,7 +7,8 @@ import numpy as np
 from brightwebapp.modifications import (
     _create_user_input_columns,
     _update_burden_intensity_based_on_user_data,
-    _update_burden_based_on_user_data
+    _update_burden_based_on_user_data,
+    _determine_edited_rows
 )
 
 @pytest.fixture
@@ -21,18 +22,85 @@ def df_original() -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
-import pandas as pd
-import numpy as np
-import pytest
-from pandas.testing import assert_frame_equal
+class TestDetermineEditedRows:
+    """
+    Test suite for the _determine_edited_rows function.
+    """
+
+    def test_basic_case_mixed_edits(self):
+        """
+        Tests the standard case with a mix of edited and unedited rows,
+        mirroring the function's docstring.
+        """
+        input_df = pd.DataFrame({
+            'UID': [0, 1, 2, 3],
+            'SupplyAmount_USER': [np.nan, 0.25, np.nan, np.nan],
+            'BurdenIntensity_USER': [np.nan, np.nan, 2.1, np.nan]
+        })
+        expected_df = pd.DataFrame({
+            'UID': [0, 1, 2, 3],
+            'SupplyAmount_USER': [np.nan, 0.25, np.nan, np.nan],
+            'BurdenIntensity_USER': [np.nan, np.nan, 2.1, np.nan],
+            'Edited?': [False, True, True, False]
+        })
+        result_df = _determine_edited_rows(input_df)
+        assert_frame_equal(result_df, expected_df)
 
 
-import pandas as pd
-import pytest
-from pandas.testing import assert_frame_equal
+    def test_no_edits(self):
+        """
+        Tests that all rows are marked as False when no user edits are present.
+        """
+        input_df = pd.DataFrame({
+            'UID': [0, 1],
+            'SupplyAmount_USER': [np.nan, np.nan],
+            'BurdenIntensity_USER': [np.nan, np.nan]
+        })
+        expected_df = pd.DataFrame({
+            'UID': [0, 1],
+            'SupplyAmount_USER': [np.nan, np.nan],
+            'BurdenIntensity_USER': [np.nan, np.nan],
+            'Edited?': [False, False]
+        })
+        result_df = _determine_edited_rows(input_df)
+        assert_frame_equal(result_df, expected_df)
+        
 
-# Assuming the function to be tested is in the same file or imported
-# from your_module import _update_burden_based_on_user_data
+    def test_both_columns_edited_in_one_row(self):
+        """
+        Tests that a row is correctly marked as True if both user columns have values.
+        """
+        input_df = pd.DataFrame({
+            'UID': [0, 1],
+            'SupplyAmount_USER': [np.nan, 5.0],
+            'BurdenIntensity_USER': [np.nan, 1.5]
+        })
+        expected_df = pd.DataFrame({
+            'UID': [0, 1],
+            'SupplyAmount_USER': [np.nan, 5.0],
+            'BurdenIntensity_USER': [np.nan, 1.5],
+            'Edited?': [False, True]
+        })
+        result_df = _determine_edited_rows(input_df)
+        assert_frame_equal(result_df, expected_df)
+        
+
+    def test_empty_dataframe(self):
+        """
+        Tests that the function correctly handles an empty DataFrame.
+        """
+        input_df = pd.DataFrame({
+            'SupplyAmount_USER': pd.Series([], dtype='float'),
+            'BurdenIntensity_USER': pd.Series([], dtype='float')
+        })
+        expected_df = pd.DataFrame({
+            'SupplyAmount_USER': pd.Series([], dtype='float'),
+            'BurdenIntensity_USER': pd.Series([], dtype='float'),
+            'Edited?': pd.Series([], dtype='bool')
+        })
+        result_df = _determine_edited_rows(input_df)
+        assert_frame_equal(result_df, expected_df)
+
 
 class TestUpdateBurden:
     """
