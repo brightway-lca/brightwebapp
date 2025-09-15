@@ -4,7 +4,17 @@ pn.extension(design='material')
 pn.extension('plotly')
 pn.extension('tabulator')
 
-from brightwebapp.brightway import load_and_set_useeio_project, brightway_wasm_database_storage_workaround
+from brightwebapp.brightway import (
+    load_and_set_useeio_project,
+    brightway_wasm_database_storage_workaround
+)
+from brightwebapp.modifications import (
+    _create_user_input_columns,
+    _update_burden_intensity_based_on_user_data,
+    _update_production_based_on_user_data,
+    _update_burden_based_on_user_data,
+    _determine_edited_rows
+)
 from brightwebapp.traversal import perform_graph_traversal
 from brightwebapp.visualization import create_plotly_figure_piechart
 import bw2data as bd
@@ -47,7 +57,7 @@ class panel_lca_class:
         self.graph_traversal = {}
         self.df_graph_traversal_nodes = None
         self.df_graph_traversal_edges = None
-        #self.df_tabulator_from_traversal = None
+        self.df_tabulator_from_traversal = None
         #self.df_tabulator_from_user = None
         self.df_tabulator = None # nota bene: gets updated automatically when cells in the tabulator are edited # https://panel.holoviz.org/reference/widgets/Tabulator.html#editors-editing
         self.bool_user_provided_data = False
@@ -291,6 +301,7 @@ def button_action_load_database(event):
 
 
 def button_action_perform_lca(event):
+    panel_lca_class_instance.bool_user_provided_data = False
     if panel_lca_class_instance.df_tabulator is not None:
         panel_lca_class_instance.reset_results(event)
     if widget_autocomplete_product.value == '':
@@ -307,10 +318,31 @@ def button_action_perform_lca(event):
     panel_lca_class_instance.determine_scope_2(event)
     widget_number_lca_score.format = f'{{value:,.3f}} {panel_lca_class_instance.chosen_method_unit}'
     widget_tabulator.value = panel_lca_class_instance.df_tabulator
+    panel_lca_class_instance.df_tabulator_from_traversal = panel_lca_class_instance.df_tabulator.copy()
     widget_number_lca_score.value = panel_lca_class_instance.determine_lca_score(event)
     pn.state.notifications.success('Completed LCA score calculation!', duration=5000)
     perform_scope_analysis(event)
 
+
+def button_action_update_based_on_user_table_input(event):
+    if panel_lca_class_instance.bool_user_provided_data == True:
+        pn.state.notifications.warning('You have already provided user data. Please re-compute the LCA score to reset the table.', duration=10000)
+        return
+    if panel_lca_class_instance.df_tabulator.equals(panel_lca_class_instance.df_tabulator_from_traversal):
+        pn.state.notifications.info('No changes detected in table!', duration=5000)
+    else:
+        panel_lca_class_instance.bool_user_provided_data = True
+        pn.state.notifications.info('Updating data...', duration=5000)
+        df_with_user_input_columns = _create_user_input_columns(
+            df_original=panel_lca_class_instance.df_tabulator_from_traversal,
+            df_user_input=panel_lca_class_instance.df_tabulator
+        )
+        df_with_user_input_columns = _determine_edited_rows(df=df_with_user_input_columns)
+        df_with_user_input_columns = _update_burden_intensity_based_on_user_data(df=df_with_user_input_columns)
+        df_with_user_input_columns = _update_production_based_on_user_data(df=df_with_user_input_columns)
+        df_with_user_input_columns = _update_burden_based_on_user_data(df=df_with_user_input_columns)
+        widget_tabulator.value = df_with_user_input_columns
+        pn.state.notifications.success('Completed update!', duration=5000)
 
 def perform_scope_analysis(event):
     pn.state.notifications.info('Performing Scope Analysis...', duration=5000)
@@ -377,13 +409,13 @@ markdown_cutoff_documentation = pn.pane.Markdown("""
 [A cut-off of 10%](https://docs.brightway.dev/projects/graphtools/en/latest/content/api/bw_graph_tools/graph_traversal/new_node_each_visit/index.html) means that an upstream process is shown if it accounts for at least 10% of total impact. The lower value of 1% is chosen here for performance reasons only.
 """)
 
-widget_button_graph = pn.widgets.Button(
-    name='Update Data based on User Input',
+widget_button_udpate = pn.widgets.Button(
+    name='Update Data based on User Table Input',
     icon='chart-donut-3',
     button_type='primary',
     sizing_mode='stretch_width'
 )
-# widget_button_graph.on_click(button_action_scope_analysis)
+widget_button_udpate.on_click(button_action_update_based_on_user_table_input)
 
 widget_number_lca_score = pn.indicators.Number(
     name='LCA Impact Score',
@@ -410,7 +442,7 @@ col1 = pn.Column(
     markdown_cutoff_documentation,
     widget_float_slider_cutoff,
     widget_button_lca,
-    widget_button_graph,
+    widget_button_udpate,
     pn.Spacer(height=10),
     widget_number_lca_score,
     widget_plotly_figure_piechart,
@@ -429,15 +461,38 @@ def highlight_tabulator_cells(tabulator_row):
     """
     if tabulator_row['Edited?'] == True:
         return ['background-color: orange'] * len(tabulator_row)
+    elif tabulator_row['Updated?'] == True:
+        return ['background-color: yellow'] * len(tabulator_row)
     else:
         return [''] * len(tabulator_row)
     
 
+editors = {
+    'Name': None, # 'None' ensured that the cell is not editable
+    'UID': None,
+    'SupplyAmount': {
+        'type': 'number',
+        'step': 0.01
+    },
+    'BurdenIntensity': {
+        'type': 'number',
+        'step': 0.01
+    },
+    'Scope': {
+        'type': 'list',
+        'values': [1, 2, 3]
+    },
+    'Burden(Cumulative)': None,
+    'Burden(Direct)': None,
+    'Depth': None,
+    'Branch': None,
+}
 widget_tabulator = pn.widgets.Tabulator(
     pd.DataFrame([['']], columns=['Data will appear here after calculations...']),
+    editors=editors,
     theme='site',
     show_index=False,
-    hidden_columns=['activity_datapackage_id', 'producer_unique_id'],
+    hidden_columns=['activity_datapackage_id', 'producer_unique_id', 'Edited?'],
     layout='fit_data_stretch',
     sizing_mode='stretch_width'
 )

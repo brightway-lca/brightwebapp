@@ -7,7 +7,7 @@ def _create_user_input_columns(
         df_user_input: pd.DataFrame,
     ) -> pd.DataFrame:
     """
-    Given two dataframes with columns `'UID', 'SupplyAmount', 'BurdenIntensity'`,
+    Given two dataframes with at least the columns `'UID', 'SupplyAmount', 'BurdenIntensity'`,
     returns a dataframe with additional columns 'SupplyAmount_USER', 'BurdenIntensity_USER'`
     where only the user-provided values are kept. All other values in these new columns are replaced by `NaN`.
 
@@ -134,15 +134,15 @@ def _update_production_based_on_user_data(df: pd.DataFrame) -> pd.DataFrame:
 
     the function returns a DataFrame of the kind:
 
-    | UID | SupplyAmount      | Branch        |
-    |-----|-------------------|---------------|
-    | 0   | 1                 | NaN           |
-    | 1   | 0.25              | [0,1]         | NOTA BENE!
-    | 2   | 0.2 * (0.25/0.5)  | [0,1,2]       |
-    | 3   | 0.1               | [0,3]         |
-    | 4   | 0.18              | [0,1,2,4]     | NOTA BENE!
-    | 5   | 0.05 * (0.18/0.1) | [0,1,2,4,5]   |
-    | 6   | 0.01 * (0.18/0.1) | [0,1,2,4,5,6] |
+    | UID | SupplyAmount      | Branch        | Updated? |
+    |-----|-------------------|---------------|----------|
+    | 0   | 1                 | NaN           | False    |
+    | 1   | 0.25              | [0,1]         | False    |
+    | 2   | 0.2 * (0.25/0.5)  | [0,1,2]       | True     |
+    | 3   | 0.1               | [0,3]         | False    |
+    | 4   | 0.18              | [0,1,2,4]     | False    |
+    | 5   | 0.05 * (0.18/0.1) | [0,1,2,4,5]   | True     |
+    | 6   | 0.01 * (0.18/0.1) | [0,1,2,4,5,6] | True     |
 
     Notes
     -----
@@ -171,112 +171,41 @@ def _update_production_based_on_user_data(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         Output DataFrame.
     """
-
-    df_filtered = df[~df['SupplyAmount_USER'].isna()]
-    dict_user_input = df_filtered.set_index('UID').to_dict()['SupplyAmount_USER']
+    df_filtered = df.dropna(subset=['SupplyAmount_USER'])
+    dict_user_input = df_filtered.set_index('UID')['SupplyAmount_USER'].to_dict()
     dict_original_amount = df.set_index('UID')['SupplyAmount'].to_dict()
-    """
-    For the example DataFrame from the docstrings above,
-    `df_filtered` would be:
+    
+    df_copy = df.copy()
 
-    | UID | SupplyAmount | SupplyAmount_USER | Branch        |
-    |-----|--------------|-------------------|---------------|
-    | 1   | 0.5          | 0.25              | [0,1]         |
-    | 4   | 0.1          | 0.18              | [0,1,2,4]     |
-
-    `dict_user_input` would be:
-
-    dict_user_input = {
-        1: 0.25,
-        4: 0.18
-    }
-
-    and `dict_original_amount` would be:
-
-    dict_original_amount = {
-        0: 1,
-        1: 0.5,
-        2: 0.2,
-        3: 0.1,
-        4: 0.1,
-        5: 0.05,
-        6: 0.01
-    }
-    """
-
-    df = df.copy(deep=True)
-    def multiplier(row) -> float:
-        """
-        Given a row of the DataFrame, determines the new production amount
-        based on the user-provided production amounts upstream of the node.
-
-        Given a row of the kind:
-
-        | UID | SupplyAmount | SupplyAmount_USER | Branch        |
-        |-----|--------------|-------------------|---------------|
-        | 2   | 0.2          | NaN               | [0,1,2]       |
-
-        and `dict_user_input` of the kind:
-
-        dict_user_input = {
-            1: 0.25,
-            4: 0.18
-        }
-
-        the function returns 
-
-        0.2 * (0.25 / 0.5) = 0.1
-
-        because node 2 is upstream of node 1, which has a user-provided production amount of 0.25.
-        
-        Given a row of the kind:
-
-        | UID | SupplyAmount | SupplyAmount_USER | Branch        |
-        |-----|--------------|-------------------|---------------|
-        | 5   | 0.05         | NaN               | [0,1,2,4,5]   |
-
-        and the same `dict_user_input`, the function returns
-
-        0.05 * (0.18 / 0.1) = 0.09
-
-        because node 5 is upstream of node 4, which has a user-provided production amount of 0.18.
-
-        Parameters
-        ----------
-        row : pd.Series
-            A row of the DataFrame.
-
-        Returns
-        -------
-        float
-            The new production amount for the given row.
-        """
+    def get_new_values(row) -> tuple[float, bool]:
         if not pd.isna(row['SupplyAmount_USER']):
-            return row['SupplyAmount_USER']
+            return (row['SupplyAmount_USER'], False)
+        
         elif not isinstance(row['Branch'], list):
-            return row['SupplyAmount']
-        elif (
-            set(dict_user_input.keys()).intersection(row['Branch'])
-        ):
+            return (row['SupplyAmount'], False)
+        
+        elif set(dict_user_input.keys()).intersection(row['Branch']):
             for branch_UID in reversed(row['Branch']):
-                if branch_UID in dict_user_input.keys():
+                if branch_UID in dict_user_input:
                     original_upstream = dict_original_amount[branch_UID]
                     user_upstream = dict_user_input[branch_UID]
 
                     if original_upstream == 0:
-                        return 0
+                        return (0, True) 
                     else:
-                        return row['SupplyAmount'] * (user_upstream / original_upstream)
+                        new_amount = row['SupplyAmount'] * (user_upstream / original_upstream)
+                        return (new_amount, True) 
+        
         else:
-            return row['SupplyAmount']
+            return (row['SupplyAmount'], False)
 
-    df['SupplyAmount_EDITED'] = df.apply(multiplier, axis=1)
+    results = df_copy.apply(get_new_values, axis=1)
+    df_copy[['SupplyAmount_EDITED', 'Updated?']] = pd.DataFrame(results.tolist(), index=df_copy.index)
 
-    df.drop(columns=['SupplyAmount_USER'], inplace=True)
-    df['SupplyAmount'] = df['SupplyAmount_EDITED']
-    df.drop(columns=['SupplyAmount_EDITED'], inplace=True)
-
-    return df
+    df_copy['SupplyAmount'] = df_copy['SupplyAmount_EDITED']
+    df_copy.drop(columns=['SupplyAmount_USER', 'SupplyAmount_EDITED'], inplace=True)
+    
+    return df_copy
 
 
 def _update_burden_based_on_user_data(df: pd.DataFrame) -> pd.DataFrame:
