@@ -6,7 +6,8 @@ import numpy as np
 
 from brightwebapp.modifications import (
     _create_user_input_columns,
-    _update_burden_intensity_based_on_user_data
+    _update_burden_intensity_based_on_user_data,
+    _update_burden_based_on_user_data
 )
 
 @pytest.fixture
@@ -25,8 +26,76 @@ import numpy as np
 import pytest
 from pandas.testing import assert_frame_equal
 
+
+import pandas as pd
+import pytest
+from pandas.testing import assert_frame_equal
+
 # Assuming the function to be tested is in the same file or imported
-# from your_module import _update_burden_intensity_based_on_user_data
+# from your_module import _update_burden_based_on_user_data
+
+class TestUpdateBurden:
+    """
+    Test suite for the _update_burden_based_on_user_data function.
+    """
+
+    def test_basic_calculation(self):
+        """
+        Tests if the 'Burden(Direct)' column is calculated correctly with standard positive numbers.
+        """
+        input_df = pd.DataFrame({
+            'UID': [0, 1, 2],
+            'SupplyAmount': [10.0, 5.0, 100.0],
+            'BurdenIntensity': [0.5, 2.0, 0.1]
+        })
+        expected_df = pd.DataFrame({
+            'UID': [0, 1, 2],
+            'SupplyAmount': [10.0, 5.0, 100.0],
+            'BurdenIntensity': [0.5, 2.0, 0.1],
+            'Burden(Direct)': [5.0, 10.0, 10.0]  # 10*0.5=5, 5*2=10, 100*0.1=10
+        })
+
+        result_df = _update_burden_based_on_user_data(input_df)
+        assert_frame_equal(result_df, expected_df)
+
+
+    def test_calculation_with_zeros(self):
+        """
+        Tests that the multiplication correctly results in zero if one of the factors is zero.
+        """
+        input_df = pd.DataFrame({
+            'UID': [0, 1, 2],
+            'SupplyAmount': [10.0, 0.0, 50.0],
+            'BurdenIntensity': [0.5, 100.0, 0.0]
+        })
+        expected_df = pd.DataFrame({
+            'UID': [0, 1, 2],
+            'SupplyAmount': [10.0, 0.0, 50.0],
+            'BurdenIntensity': [0.5, 100.0, 0.0],
+            'Burden(Direct)': [5.0, 0.0, 0.0]  # 10*0.5=5, 0*100=0, 50*0=0
+        })
+
+        result_df = _update_burden_based_on_user_data(input_df)
+        assert_frame_equal(result_df, expected_df)
+
+    
+    def test_empty_dataframe(self):
+        """
+        Tests that the function correctly handles an empty DataFrame.
+        """
+        input_df = pd.DataFrame({
+            'SupplyAmount': pd.Series([], dtype='float'),
+            'BurdenIntensity': pd.Series([], dtype='float')
+        })
+        expected_df = pd.DataFrame({
+            'SupplyAmount': pd.Series([], dtype='float'),
+            'BurdenIntensity': pd.Series([], dtype='float'),
+            'Burden(Direct)': pd.Series([], dtype='float')
+        })
+
+        result_df = _update_burden_based_on_user_data(input_df)
+        assert_frame_equal(result_df, expected_df)
+
 
 class TestUpdateBurdenIntensity:
     """
