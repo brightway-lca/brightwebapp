@@ -493,7 +493,8 @@ def perform_graph_traversal(
     Raises
     ------
     ValueError
-        _description_
+        If `return_format` is not `'dataframe'` or `'csv'`.  
+        If no edges are found in the graph traversal.
     """
     traversal: dict = _traverse_graph(
         demand=demand,

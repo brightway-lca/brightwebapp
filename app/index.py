@@ -11,6 +11,7 @@ from brightwebapp.brightway import (
     brightway_wasm_database_storage_workaround
 )
 from brightwebapp.traversal import perform_graph_traversal
+from brightwebapp.visualization import create_plotly_figure_piechart
 import bw2data as bd
 
 
@@ -22,53 +23,6 @@ import pandas as pd
 
 
 brightway_wasm_database_storage_workaround()
-
-
-def create_plotly_figure_piechart(data_dict: dict) -> plotly.graph_objects.Figure:
-    marker_colors = []
-    for label in data_dict.keys():
-        if label == 'Scope 1':
-            marker_colors.append('#33cc33')  # Color for Scope 1
-        elif label == 'Scope 2':
-            marker_colors.append('#ffcc00')  # Color for Scope 2
-        elif label == 'Scope 3':
-            marker_colors.append('#3366ff')  # Color for Scope 3
-        else:
-            marker_colors.append('#000000')  # Default color for other labels
-
-    plotly_figure = plotly.graph_objects.Figure(
-        data=[
-            plotly.graph_objects.Pie(
-                labels=list(data_dict.keys()),
-                values=list(data_dict.values()),
-                marker=dict(colors=marker_colors)  # Set the colors for the pie chart
-            )
-        ]
-    )
-    plotly_figure.update_traces(
-        marker=dict(
-            line=dict(color='#000000', width=2)
-        )
-    )
-    plotly_figure.update_layout(
-        autosize=True,
-        height=300,
-        legend=dict(
-            orientation="v",
-            yanchor="auto",
-            y=1,
-            xanchor="right",
-            x=-0.3
-        ),
-        margin=dict(
-            l=50,
-            r=50,
-            b=0,
-            t=0,
-            pad=0
-        ),
-    )
-    return plotly_figure
 
 
 class panel_lca_class:
@@ -250,15 +204,18 @@ class panel_lca_class:
 
 
     def trigger_graph_traversal(self, event):
-        self.df_tabulator_from_traversal = perform_graph_traversal(
-            demand={self.chosen_activity: self.chosen_amount},
-            method=self.chosen_method.name,
-            cutoff=self.graph_traversal_cutoff,
-            biosphere_cutoff=0.01,
-            max_calc=100,
-            return_format='dataframe',
-        )
-        
+        try:
+            self.df_tabulator_from_traversal = perform_graph_traversal(
+                demand={self.chosen_activity: self.chosen_amount},
+                method=self.chosen_method.name,
+                cutoff=self.graph_traversal_cutoff,
+                biosphere_cutoff=0.01,
+                max_calc=100,
+                return_format='dataframe',
+            )
+        except ValueError as e:
+            pn.state.notifications.error(str(e), duration=15000)
+            return
 
     def determine_scope_2(self, event):
         """
@@ -334,6 +291,7 @@ def button_action_perform_lca(event):
     panel_lca_class_instance.determine_scope_2(event)
     widget_number_lca_score.format = f'{{value:,.3f}} {panel_lca_class_instance.chosen_method_unit}'
     widget_tabulator.value = panel_lca_class_instance.df_tabulator_from_traversal
+    widget_number_lca_score.value = panel_lca_class_instance.df_tabulator_from_traversal['Burden(Direct)'].sum()
     widget_plotly_figure_piechart.object = create_plotly_figure_piechart(panel_lca_class_instance.scope_dict)
     pn.state.notifications.success('Completed LCA score calculation!', duration=5000)
     perform_scope_analysis(event)
@@ -342,9 +300,8 @@ def button_action_perform_lca(event):
 def perform_scope_analysis(event):
     pn.state.notifications.info('Performing Scope Analysis...', duration=5000)
     panel_lca_class_instance.determine_scope_emissions(event)
-    widget_plotly_figure_piechart.object = create_plotly_figure_piechart(panel_lca_class_instance.scope_dict)
+    chart.object = create_plotly_figure_piechart(panel_lca_class_instance.scope_dict)
     panel_lca_class_instance.set_table_filename(event)
-    widget_number_lca_score.value = panel_lca_class_instance.df_tabulator['Burden(Direct)'].sum()
     pn.state.notifications.success('Scope Analysis Complete!', duration=5000)
 
 
@@ -355,7 +312,6 @@ widget_button_load_db = pn.widgets.Button(
     sizing_mode='stretch_width'
 )
 widget_button_load_db.on_click(button_action_load_database)
-
 
 
 widget_autocomplete_product = pn.widgets.AutocompleteInput( 

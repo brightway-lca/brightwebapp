@@ -12,6 +12,7 @@ nav:
     - Traversal: 'api/traversal.md'
     - Modifications: 'api/modifications.md'
     - Brightway: 'api/brightway.md'
+    - Visualization: 'api/visualization.md'
     - Tests: 'api/tests.md'
   - API (FastAPI):
     - Endpoints: 'api/endpoints.md'
