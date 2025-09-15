@@ -48,7 +48,19 @@ def _create_user_input_columns(
     -------
     pd.DataFrame
         Output DataFrame.
+
+    Raises
+    ------
+    ValueError
+        If the set of UIDs in `df_original` and `df_user_input` do
+        not match exactly.
     """
+    uids_original = set(df_original['UID'])
+    uids_user_input = set(df_user_input['UID'])
+
+    if uids_original != uids_user_input:
+        raise ValueError("UIDs in original and user input dataframes do not match.")
+
     df_merged = pd.merge(
         df_original,
         df_user_input[['UID', 'SupplyAmount', 'BurdenIntensity']],

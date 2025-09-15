@@ -19,7 +19,7 @@ from brightwebapp.traversal import (
 
 def test_traverse_graph() -> dict:
     """
-    Test the `_traverse_graph` function
+    Tests the `_traverse_graph` function
     to ensure it correctly traverses a simple supply chain graph.
 
     Returns
