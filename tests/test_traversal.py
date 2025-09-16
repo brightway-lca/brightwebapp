@@ -53,9 +53,9 @@ def test_traverse_graph() -> dict:
         `bw_graph_tools.NewNodeEachVisitGraphTraversal` dictionary containing the nodes and edges of the graph traversal.
     """
     example_system_bike_production()
+    lca = test_perform_lca()
     traversal = _traverse_graph(
-        demand={bd.get_node(code='bike'): 1},
-        method=('IPCC', ),
+        lca=lca,
         cutoff=0.01,
         biosphere_cutoff=0.01,
         max_calc=100,
