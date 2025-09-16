@@ -15,7 +15,7 @@ from brightwebapp.modifications import (
     _update_burden_based_on_user_data,
     _determine_edited_rows
 )
-from brightwebapp.traversal import perform_graph_traversal
+from brightwebapp.traversal import perform_lca, perform_graph_traversal
 from brightwebapp.visualization import create_plotly_figure_piechart
 import bw2data as bd
 
@@ -58,7 +58,7 @@ class panel_lca_class:
         self.df_graph_traversal_nodes = None
         self.df_graph_traversal_edges = None
         self.df_tabulator_from_traversal = None
-        #self.df_tabulator_from_user = None
+        self.sum_direct_burden = 0
         self.df_tabulator = None # nota bene: gets updated automatically when cells in the tabulator are edited # https://panel.holoviz.org/reference/widgets/Tabulator.html#editors-editing
         self.bool_user_provided_data = False
 
@@ -215,13 +215,20 @@ class panel_lca_class:
 
     def run_graph_traversal(self, event):
         try:
-            self.df_tabulator = perform_graph_traversal(
+            self.lca = perform_lca(
                 demand={self.chosen_activity: self.chosen_amount},
                 method=self.chosen_method.name,
+            )
+        except ValueError as e:
+            pn.state.notifications.error(str(e), duration=15000)
+            return
+        try:
+            self.df_tabulator = perform_graph_traversal(
                 cutoff=self.graph_traversal_cutoff,
                 biosphere_cutoff=0.01,
                 max_calc=100,
                 return_format='dataframe',
+                lca=self.lca,
             )
         except ValueError as e:
             pn.state.notifications.error(str(e), duration=15000)
@@ -274,17 +281,6 @@ class panel_lca_class:
         panel_lca_class_instance.scope_dict = dict_scope
 
 
-    def determine_lca_score(self, event):
-        """
-        Performs a Brightway LCA calculation and sets the `lca` attribute to the resulting `bw2calc.LCA` object.
-        """
-        if len(self.df_tabulator.index) > 1:
-            score = self.df_tabulator['Burden(Direct)'].sum()
-        else:
-            score = 0
-        return score
-
-
 panel_lca_class_instance = panel_lca_class()
 
 
@@ -319,7 +315,8 @@ def button_action_perform_lca(event):
     widget_number_lca_score.format = f'{{value:,.3f}} {panel_lca_class_instance.chosen_method_unit}'
     widget_tabulator.value = panel_lca_class_instance.df_tabulator
     panel_lca_class_instance.df_tabulator_from_traversal = panel_lca_class_instance.df_tabulator.copy()
-    widget_number_lca_score.value = panel_lca_class_instance.determine_lca_score(event)
+    widget_number_lca_score.value = panel_lca_class_instance.lca.score
+    panel_lca_class_instance.sum_direct_burden = panel_lca_class_instance.df_tabulator['Burden(Direct)'].sum()
     pn.state.notifications.success('Completed LCA score calculation!', duration=5000)
     perform_scope_analysis(event)
 
@@ -342,6 +339,7 @@ def button_action_update_based_on_user_table_input(event):
         df_with_user_input_columns = _update_production_based_on_user_data(df=df_with_user_input_columns)
         df_with_user_input_columns = _update_burden_based_on_user_data(df=df_with_user_input_columns)
         widget_tabulator.value = df_with_user_input_columns
+        widget_number_lca_score.value = df_with_user_input_columns['Burden(Direct)'].sum() - panel_lca_class_instance.sum_direct_burden + panel_lca_class_instance.lca.score
         pn.state.notifications.success('Completed update!', duration=5000)
 
 def perform_scope_analysis(event):
@@ -492,7 +490,7 @@ widget_tabulator = pn.widgets.Tabulator(
     editors=editors,
     theme='site',
     show_index=False,
-    hidden_columns=['activity_datapackage_id', 'producer_unique_id', 'Edited?'],
+    hidden_columns=['activity_datapackage_id', 'producer_unique_id', 'Edited?', 'Updated?'],
     layout='fit_data_stretch',
     sizing_mode='stretch_width'
 )

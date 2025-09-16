@@ -4,9 +4,51 @@ import bw_graph_tools as bgt
 import bw2calc as bc
 import bw2data as bd
 
+def perform_lca(demand: dict, method: tuple) -> bc.LCA:
+    """
+    Performs a life-cycle assessment calculation using the `bw2calc` library.
+
+    See Also
+    --------
+    [`bw2calc.LCA`](https://2.docs.brightway.dev/projects/bw2calc/en/latest/api/bw2calc/lca.html#bw2calc.lca.LCA)
+
+    Parameters
+    ----------
+    demand : dict
+        A dictionary representing the demand for the life-cycle assessment.
+        Keys are `bw2data` nodes (activities) and the values are the amounts
+        of those activities to be produced or consumed.
+        Of the form:  
+        ```python
+        {bd.get_node(code='bike'): 1}
+        ``` 
+    method : tuple 
+        A tuple representing the method to be used for the life-cycle assessment.
+        Of the form:  
+        ```python
+        ('Impact Potential', 'GCC')
+        ```
+    
+    Returns
+    -------
+    bc.LCA
+        An instance of the `bw2calc.LCA` class representing the life-cycle assessment calculation.
+    """
+    my_functional_unit, data_objs, _ = bd.prepare_lca_inputs(
+        demand=demand,
+        method=method
+    )
+    lca = bc.LCA(
+        demand=my_functional_unit,
+        data_objs=data_objs,
+    )
+    lca.lci()
+    lca.lcia()
+    return lca
+
+
 def _traverse_graph(
-    demand: dict,
-    method: tuple,
+    lca: bc.LCA,
     cutoff: float,
     biosphere_cutoff: float,
     max_calc: int,
@@ -22,24 +64,13 @@ def _traverse_graph(
 
     See Also
     --------
+    [`brightwebapp.traversal.perform_lca`][]  
     [`bw_graph_tools.graph_traversal.new_node_each_visit.NewNodeEachVisitGraphTraversal`](https://docs.brightway.dev/projects/graphtools/en/latest/content/api/bw_graph_tools/graph_traversal/new_node_each_visit/index.html#bw_graph_tools.graph_traversal.new_node_each_visit.NewNodeEachVisitGraphTraversal)
 
     Parameters
     ----------
-    demand : dict
-        A dictionary representing the demand for the life-cycle assessment.
-        Keys are `bw2data` nodes (activities) and the values are the amounts
-        of those activities to be produced or consumed.
-        Of the form:  
-        ```python
-        {bd.get_node(code='bike'): 1}
-        ```
-    method : tuple
-        A tuple representing the method to be used for the life-cycle assessment.
-        Of the form:  
-        ```python
-        ('Impact Potential', 'GCC')
-        ```
+    lca : bc.LCA
+        An instance of the `bw2calc.LCA` class representing the life-cycle assessment calculation.
     cutoff : float
         A float representing the cutoff threshold for the graph traversal.
     biosphere_cutoff : float
@@ -59,16 +90,6 @@ def _traverse_graph(
         }
         ```
     """
-    my_functional_unit, data_objs, _ = bd.prepare_lca_inputs(
-        demand=demand,
-        method=method
-    )
-    lca = bc.LCA(
-        demand=my_functional_unit,
-        data_objs=data_objs,
-    )
-    lca.lci()
-    lca.lcia()
     traversal = bgt.NewNodeEachVisitGraphTraversal(
         lca=lca,
         settings=bgt.GraphTraversalSettings(
@@ -416,37 +437,30 @@ def _add_branch_information_to_edges_dataframe(df: pd.DataFrame) -> pd.DataFrame
 
 
 def perform_graph_traversal(
-    demand: dict,
-    method: tuple,
     cutoff: float,
     biosphere_cutoff: float,
     max_calc: int,
     return_format: str,
+    lca: bc.LCA = None,
+    method: tuple = None,
+    demand: dict = None,
 ) -> pd.DataFrame | str:
     """
     Performs a graph traversal of a life-cycle assessment calculation
     and returns a DataFrame with the nodes and edges of the graph traversal.
 
+    Notes
+    -----
+    Accepts either an `lca` object returned by the [`brightwebapp.traversal.perform_lca`][] function
+    or the `method` and `demand` variables.
+
     See Also
     --------
+    [`brightwebapp.traversal.perform_lca`][]  
     [`bw_graph_tools`](https://docs.brightway.dev/projects/graphtools/en/latest/content/api/bw_graph_tools/index.html)
 
     Parameters
     ----------
-    demand : dict
-        A dictionary representing the demand for the life-cycle assessment.
-        Keys are `bw2data` nodes (activities) and the values are the amounts
-        of those activities to be produced or consumed.  
-        Of the form:
-        ```python
-        {bd.get_node(code='bike'): 1}
-        ```
-    method : tuple
-        A tuple representing the method to be used for the life-cycle assessment.
-        Of the form:
-        ```python
-        ('Impact Potential', 'GCC')
-        ```
     cutoff : float
         A float representing the cutoff threshold for the graph traversal.
         This is used to limit the depth of the traversal and the amount of data processed.
@@ -459,7 +473,15 @@ def perform_graph_traversal(
     return_format : str
         A string indicating the format of the return value.
         Can be either `'dataframe'` or `'csv'`.
-
+    lca : bc.LCA | None, optional
+        An instance of the `bw2calc.LCA` class representing the life-cycle assessment calculation
+    method : tuple | None, optional
+        A tuple representing the method to be used for the life-cycle assessment.
+    demand : dict | None, optional
+        A dictionary representing the demand for the life-cycle assessment.
+        Keys are `bw2data` nodes (activities) and the values are the amounts
+        of those activities to be produced or consumed.
+        
     Returns
     -------
     pd.DataFrame
@@ -489,16 +511,35 @@ def perform_graph_traversal(
         2,3,Transmission and power train parts; at manufacturer,0.09230018343308832,0.016065891653621933,0.002965769493290854,2,"[0, 2]"\n
         (...)
         ```
-        
+    
     Raises
     ------
     ValueError
         If `return_format` is not `'dataframe'` or `'csv'`.  
         If no edges are found in the graph traversal.
     """
+    if return_format not in ['dataframe', 'csv']:
+        raise ValueError(
+            f"Invalid return_format '{return_format}'. "
+            "Expected 'dataframe' or 'csv'."
+        )
+    if lca is None:
+        if method is None or demand is None:
+            raise ValueError(
+                "If 'lca' is not provided, both 'method' and 'demand' must be provided."
+            )
+        lca = perform_lca(
+            demand=demand,
+            method=method
+        )
+    if lca is not None and (method is not None or demand is not None):
+        print(
+            "Warning: Both 'lca' and 'method'/'demand' are provided. "
+            "'lca' will be used and 'method'/'demand' will be ignored."
+        )
+
     traversal: dict = _traverse_graph(
-        demand=demand,
-        method=method,
+        lca=lca,
         cutoff=cutoff,
         biosphere_cutoff=biosphere_cutoff,
         max_calc=max_calc,

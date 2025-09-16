@@ -11,11 +11,36 @@ from tests.fixtures.supplychain import (
 
 from brightwebapp.traversal import (
     _traverse_graph,
+    perform_lca,
+    perform_graph_traversal,
     _nodes_dict_to_dataframe,
     _edges_dict_to_dataframe,
     _trace_branch_from_last_node,
     _add_branch_information_to_edges_dataframe,
 )
+
+
+def test_perform_lca() -> None:
+    """
+    Tests the `perform_lca` function
+    to ensure it correctly performs LCA on a simple supply chain graph.
+
+    Returns
+    -------
+    None
+    """
+    example_system_bike_production()
+    lca = perform_lca(
+        demand={bd.get_node(code='bike'): 1},
+        method=('IPCC', ),
+    )
+    assert lca.score > 0
+    assert lca.characterized_inventory.shape == (1, 3)
+    assert lca.inventory.shape == (1, 3)
+    assert lca.technosphere_matrix.data.shape == (6,)
+    assert lca.biosphere_matrix.data.shape == (2,)
+    return lca
+
 
 def test_traverse_graph() -> dict:
     """

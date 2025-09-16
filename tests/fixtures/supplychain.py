@@ -1,6 +1,7 @@
+# %%
 import bw2data as bd
 
-
+ 
 def example_system_bike_production() -> None:
     """
     Sets up a simple supply chain graph in a Brightway project for testing purposes.  

@@ -6,6 +6,9 @@ from brightwebapp.visualization import (
 )
 
 class TestCreatePlotlyFigurePiechart(unittest.TestCase):
+    """
+    Test suite for the `create_plotly_figure_piechart` function.
+    """
 
     def test_standard_input(self):
         """

@@ -87,7 +87,10 @@ class TestUpdateProductionBasedOnUserData:
         df_no_user_input = base_df.copy()
         df_no_user_input['SupplyAmount_USER'] = np.nan
         
+        # Create the expected DataFrame by dropping the user column...
         expected_df = df_no_user_input.drop(columns=['SupplyAmount_USER'])
+        # ...and adding the new 'Updated?' column with all False values.
+        expected_df['Updated?'] = False
 
         result_df = _update_production_based_on_user_data(df_no_user_input)
 
@@ -109,8 +112,10 @@ class TestUpdateProductionBasedOnUserData:
 
         expected_data = {
             'UID': [0, 1, 2],
-            'SupplyAmount': [10.0, 2.0, 0.0], # UID 2 becomes 0 due to division by zero
-            'Branch': [np.nan, [0, 1], [0, 1, 2]]
+            'SupplyAmount': [10.0, 2.0, 0.0],
+            'Branch': [np.nan, [0, 1], [0, 1, 2]],
+            # FIX: Added 'Updated?' column with correct boolean values
+            'Updated?': [False, False, True]
         }
         expected_df = pd.DataFrame(expected_data)
 
@@ -132,15 +137,16 @@ class TestUpdateProductionBasedOnUserData:
         }
         df = pd.DataFrame(data)
         
-        # Factor is 50.0 / 100.0 = 0.5
         expected_data = {
             'UID': [0, 1, 2],
             'SupplyAmount': [
-                50.0,           # Direct update
-                50.0 * 0.5,     # Scaled by root
-                20.0 * 0.5      # Scaled by root
+                50.0,       # Direct update
+                25.0,       # Scaled by root
+                10.0        # Scaled by root
             ],
-            'Branch': [np.nan, [0, 1], [0, 2]]
+            'Branch': [np.nan, [0, 1], [0, 2]],
+            # FIX: Added 'Updated?' column with correct boolean values
+            'Updated?': [False, True, True]
         }
         expected_df = pd.DataFrame(expected_data)
         
