@@ -1,6 +1,6 @@
 # `brightwebapp` Changelog
 
-## 0.0.9 (2025-10-10)
+## 0.0.9 (2025-09-16)
 
 ### New Features
 
