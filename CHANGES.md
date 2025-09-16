@@ -1,5 +1,11 @@
 # `brightwebapp` Changelog
 
+## 0.0.9 (2025-10-10)
+
+### New Features
+
+- The `traverse_graph` function now accepts optional parameters `lca`, `method`, and `demand` to allow for more flexible graph traversal without relying on a pre-existing LCA instance. This allows the dashboard to use the `lca.score` values directly.
+
 ## 0.0.8 (2025-09-15)
 
 ### New Features
