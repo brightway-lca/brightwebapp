@@ -259,6 +259,7 @@ class GraphTraversalRequest(BaseModel):
 )
 async def get_node(
     name: Optional[str] = None,
+    referenceproduct: Optional[str] = None,
     location: Optional[str] = None,
     unit: Optional[str] = None,
     database: Optional[str] = None,
@@ -267,17 +268,28 @@ async def get_node(
     """
     Retrieves metadata for a specific node by its attributes.
 
-    Provide at least one of the query parameters (e.g., name, code, location)
-    to find a unique node. For example:
-    `/database/getnode?name=electricity%20production,%20hard%20coal&location=DE`
+    Provide at least one of the query parameters:
+    
+    - `name`
+    - `referenceproduct`
+    - `location`
+    - `unit`
+    - `database`
+    - `code`
+
+    to find a unique node.
+    
+    For example:
+    
+    `database/getnode?name=polyvinylidenchloride%20production%2C%20granulate&location=RER`
     """
     logging.warning(f"Attempting to get node in project: {bd.projects.current}")
 
-    # Create a dictionary of the provided search filters, excluding None values
     search_filters = {
         key: value
         for key, value in {
             "name": name,
+            "reference product": referenceproduct,
             "location": location,
             "unit": unit,
             "database": database,
@@ -286,7 +298,6 @@ async def get_node(
         if value is not None
     }
 
-    # Ensure at least one filter is provided
     if not search_filters:
         raise HTTPException(
             status_code=400,
@@ -294,10 +305,10 @@ async def get_node(
         )
 
     try:
-        # Unpack the filters dictionary to use as keyword arguments for the search
         node = bd.get_node(**search_filters)
         return {
             "name": node.get("name"),
+            "reference product": node.get("reference product"),
             "location": node.get("location"),
             "unit": node.get("unit"),
             "code": node.get("code"),
@@ -369,12 +380,12 @@ async def run_graph_traversal(request: GraphTraversalRequest):
         }
 
         csv_data = perform_graph_traversal(
-            demand=demand_dict,
-            method=request.method,
             cutoff=request.cutoff,
             biosphere_cutoff=request.biosphere_cutoff,
             max_calc=request.max_calc,
-            return_format='csv'
+            return_format='csv',
+            demand=demand_dict,
+            method=request.method,
         )
 
         return Response(

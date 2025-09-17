@@ -25,7 +25,7 @@ For a more dynamic setup, you can use the `docker-compose.yml` file. This allows
 It also mounts the current directory to the `/app` directory in the container, allowing you to develop and test your application without rebuilding the image every time you make a change.
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 ## Test USEEIO Database Operations
@@ -72,7 +72,7 @@ curl -X POST http://localhost:8000/setup/ecoinvent-database \
 An arbitrary Ecoinvent node can be retrieved by its [`code` field](https://github.com/brightway-lca/brightway2-data/blob/2b71aec652d29d367ea2c166c78dafd4c90e1397/bw2data/utils.py#L355) with the following command:
 
 ```bash
-curl -X GET "http://localhost:8000/database/getnode?code=43ec7ae3d4442a295564dd4a24906725"
+curl -X GET "http://localhost:8000/database/getnode?name=polyvinylidenchloride%20production%2C%20granulate&location=RER"
 ```
 
 A simple path traversal calculation can be performed with the following command:
@@ -83,7 +83,7 @@ curl -X POST http://localhost:8000/traversal/perform \
 -d '{
         "demand": [
             {
-                "code": "43ec7ae3d4442a295564dd4a24906725",
+                "code": "092e1ead370cd1fcfc6a172672b72860",
                 "amount": 1
             }
         ],
