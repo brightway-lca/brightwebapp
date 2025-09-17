@@ -31,7 +31,6 @@ class TestPerformLCA:
     Test suite for the `perform_lca` function.
     """
 
-
     def test_perform_lca_success(self) -> None:
         """
         Tests the `perform_lca` function for a successful calculation
@@ -102,7 +101,10 @@ def test_traverse_graph() -> dict:
         `bw_graph_tools.NewNodeEachVisitGraphTraversal` dictionary containing the nodes and edges of the graph traversal.
     """
     example_system_bike_production()
-    lca = test_perform_lca()
+    lca = lca = perform_lca(
+        demand={bd.get_node(code='bike'): 1},
+        method=('IPCC', ),
+    )
     traversal = _traverse_graph(
         lca=lca,
         cutoff=0.01,
