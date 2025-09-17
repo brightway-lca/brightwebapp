@@ -219,7 +219,7 @@ class GraphTraversalRequest(BaseModel):
     max_calc: int = 100
 
 
-@router.get( # Changed from POST to GET
+@router.get(
     "/database/getnode",
     responses={
         200: {
@@ -230,40 +230,88 @@ class GraphTraversalRequest(BaseModel):
                         "name": "electricity production, hard coal",
                         "location": "DE",
                         "unit": "kilowatt hour",
-                        "code": "38300de0f8f94767a9a3458b48392fd7"
+                        "code": "38300de0f8f94767a9a3458b48392fd7",
                     }
                 }
-            }
+            },
         },
-        404: {
-            "description": "Raised if the node with the specified code does not exist.",
+        400: {
+            "description": "Raised if the provided attributes match multiple nodes or if no attributes are provided.",
             "content": {
                 "application/json": {
                     "example": {
-                        "detail": "Node not found for code 'some_invalid_code'"
+                        "detail": "Multiple nodes found for {'name': 'electricity'}. Please provide more specific criteria."
                     }
                 }
-            }
-        }
-    }
+            },
+        },
+        404: {
+            "description": "Raised if no node matches the specified attributes.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Node not found for criteria: {'name': 'nonexistent activity'}"
+                    }
+                }
+            },
+        },
+    },
 )
-async def get_node(code: str):
+async def get_node(
+    name: Optional[str] = None,
+    location: Optional[str] = None,
+    unit: Optional[str] = None,
+    database: Optional[str] = None,
+    code: Optional[str] = None,
+):
     """
-    Retrieves metadata for a specific node in the Brightway database.
+    Retrieves metadata for a specific node by its attributes.
+
+    Provide at least one of the query parameters (e.g., name, code, location)
+    to find a unique node. For example:
+    `/database/getnode?name=electricity%20production,%20hard%20coal&location=DE`
     """
     logging.warning(f"Attempting to get node in project: {bd.projects.current}")
-    try:
-        # Correctly call get_node with a keyword argument
-        node = bd.get_node(code=code)
-        return {
-            "name": node.get('name'),
-            "location": node.get('location'),
-            "unit": node.get('unit'),
-            "code": node.get('code')
-        }
-    except: # Catches NodeNotFound or any other error from get_node
-        raise HTTPException(status_code=404, detail=f"Node not found for code '{code}'")
 
+    # Create a dictionary of the provided search filters, excluding None values
+    search_filters = {
+        key: value
+        for key, value in {
+            "name": name,
+            "location": location,
+            "unit": unit,
+            "database": database,
+            "code": code,
+        }.items()
+        if value is not None
+    }
+
+    # Ensure at least one filter is provided
+    if not search_filters:
+        raise HTTPException(
+            status_code=400,
+            detail="No search criteria provided. Please supply at least one attribute (e.g., name, code).",
+        )
+
+    try:
+        # Unpack the filters dictionary to use as keyword arguments for the search
+        node = bd.get_node(**search_filters)
+        return {
+            "name": node.get("name"),
+            "location": node.get("location"),
+            "unit": node.get("unit"),
+            "code": node.get("code"),
+        }
+    except bd.errors.MultipleResults:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Multiple nodes found for the given criteria: {search_filters}. Please be more specific.",
+        )
+    except (bd.errors.NodeNotFound, StopIteration):
+        raise HTTPException(
+            status_code=404,
+            detail=f"Node not found for criteria: {search_filters}",
+        )
 
 @router.post(
     "/traversal/perform",

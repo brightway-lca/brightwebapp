@@ -20,26 +20,75 @@ from brightwebapp.traversal import (
 )
 
 
-def test_perform_lca() -> None:
-    """
-    Tests the `perform_lca` function
-    to ensure it correctly performs LCA on a simple supply chain graph.
+import pytest
+import bw2data as bd
+from bw2data.backends.proxies import Activity
+from bw2calc import LCA
 
-    Returns
-    -------
-    None
+
+class TestPerformLCA:
     """
-    example_system_bike_production()
-    lca = perform_lca(
-        demand={bd.get_node(code='bike'): 1},
-        method=('IPCC', ),
-    )
-    assert lca.score > 0
-    assert lca.characterized_inventory.shape == (1, 3)
-    assert lca.inventory.shape == (1, 3)
-    assert lca.technosphere_matrix.data.shape == (6,)
-    assert lca.biosphere_matrix.data.shape == (2,)
-    return lca
+    Test suite for the `perform_lca` function.
+    """
+
+
+    def test_perform_lca_success(self) -> None:
+        """
+        Tests the `perform_lca` function for a successful calculation
+        to ensure it correctly performs LCA on a simple supply chain graph.
+        """
+        example_system_bike_production()
+        lca = perform_lca(
+            demand={bd.get_node(code='bike'): 1},
+            method=('IPCC', ),
+        )
+        assert isinstance(lca, LCA)
+        assert lca.score > 0
+        assert lca.characterized_inventory.shape == (1, 3)
+        assert lca.inventory.shape == (1, 3)
+        assert lca.technosphere_matrix.data.shape == (6,)
+        assert lca.biosphere_matrix.data.shape == (2,)
+
+    def test_perform_lca_raises_error_for_multiple_demands(self) -> None:
+        """
+        Tests that `perform_lca` raises a ValueError
+        when the demand dictionary contains more than one activity.
+        """
+        example_system_bike_production()
+        multi_demand = {
+            bd.get_node(code='bike'): 1,
+            bd.get_node(code='steel'): 2,
+        }
+        with pytest.raises(ValueError, match="Demand dictionary must contain exactly one activity."):
+            perform_lca(
+                demand=multi_demand,
+                method=('IPCC', ),
+            )
+
+    def test_perform_lca_raises_error_for_empty_demand(self) -> None:
+        """
+        Tests that `perform_lca` raises a ValueError
+        when the demand dictionary is empty.
+        """
+        example_system_bike_production()
+        with pytest.raises(ValueError, match="Demand dictionary must contain exactly one activity."):
+            perform_lca(
+                demand={},
+                method=('IPCC', ),
+            )
+
+    def test_perform_lca_raises_error_for_invalid_key_type(self) -> None:
+        """
+        Tests that `perform_lca` raises a ValueError
+        when the demand dictionary key is not a bw2data Activity.
+        """
+        example_system_bike_production()
+        invalid_demand = {'this is not an activity': 1}
+        with pytest.raises(ValueError, match="The key in the demand dictionary must be a valid bw2data node dictionary."):
+            perform_lca(
+                demand=invalid_demand,
+                method=('IPCC', ),
+            )
 
 
 def test_traverse_graph() -> dict:

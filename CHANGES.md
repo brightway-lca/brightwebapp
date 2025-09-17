@@ -1,5 +1,12 @@
 # `brightwebapp` Changelog
 
+## 0.0.10 (2025-09-17)
+
+### New Features
+
+- Added documentation and tests to the `perform_lca` function in `brightwebapp/traversal.py`, including error handling for invalid demand inputs.
+- Updated the `/database/getnode` API endpoint to allow fetching bw2data node codes by `name`, `location`, etc.
+
 ## 0.0.9 (2025-09-16)
 
 ### New Features

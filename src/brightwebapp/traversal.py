@@ -3,6 +3,8 @@ import pandas as pd
 import bw_graph_tools as bgt
 import bw2calc as bc
 import bw2data as bd
+from bw2data.backends.proxies import Activity
+
 
 def perform_lca(demand: dict, method: tuple) -> bc.LCA:
     """
@@ -15,25 +17,53 @@ def perform_lca(demand: dict, method: tuple) -> bc.LCA:
     Parameters
     ----------
     demand : dict
-        A dictionary representing the demand for the life-cycle assessment.
-        Keys are `bw2data` nodes (activities) and the values are the amounts
-        of those activities to be produced or consumed.
-        Of the form:  
+        A dictionary representing the reference product demand for the life-cycle assessment calculation.  
+
+        The key is a `bw2data` node ([`bw2data.backends.proxies.Activity`](https://docs.brightway.dev/en/latest/content/api/bw2data/backends/proxies/index.html#bw2data.backends.proxies.Activity)) 
+        and the values is amounts of the activities to be produced.
+        
+        For example:  
+
         ```python
         {bd.get_node(code='bike'): 1}
         ``` 
     method : tuple 
         A tuple representing the method to be used for the life-cycle assessment.
-        Of the form:  
+
+        For example:  
+
         ```python
         ('Impact Potential', 'GCC')
         ```
+
+    Warnings
+    --------
+    The `demand` dictionary must contain exactly one activity.
+
+    See Also
+    --------
+    [Brightway Documentation: LCA Calculations](https://docs.brightway.dev/en/latest/content/cheatsheet/lca.html)
     
     Returns
     -------
     bc.LCA
         An instance of the `bw2calc.LCA` class representing the life-cycle assessment calculation.
+
+    Raises
+    ------
+    ValueError
+        If `demand` does not contain exactly one activity.
+        If the key in `demand` is not a valid `bw2data` node dictionary.
     """
+    if len(demand) != 1:
+        raise ValueError(
+            "Demand dictionary must contain exactly one activity."
+        )
+    if not isinstance(next(iter(demand)), Activity):
+        raise ValueError(
+            "The key in the demand dictionary must be a valid bw2data node dictionary."
+        )
+
     my_functional_unit, data_objs, _ = bd.prepare_lca_inputs(
         demand=demand,
         method=method
@@ -443,7 +473,8 @@ def perform_graph_traversal(
     return_format: str,
     lca: bc.LCA = None,
     method: tuple = None,
-    demand: dict = None,
+    demand_node_dict: dict = None,
+    demand_amount: float = 1.0,
 ) -> pd.DataFrame | str:
     """
     Performs a graph traversal of a life-cycle assessment calculation
@@ -537,6 +568,14 @@ def perform_graph_traversal(
             "Warning: Both 'lca' and 'method'/'demand' are provided. "
             "'lca' will be used and 'method'/'demand' will be ignored."
         )
+    try:
+        demand_node = bd.get_node(demand_node_dict)
+    except Exception as e:
+        raise ValueError(
+            f"Invalid demand_node '{demand_node}'. "
+            "Must be a valid bw2data node dictionary."
+        )
+    
 
     traversal: dict = _traverse_graph(
         lca=lca,
