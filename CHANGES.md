@@ -1,5 +1,9 @@
 # `brightwebapp` Changelog
 
+## 1.0.0 (2025-09-26)
+
+First stable release.
+
 ## 0.0.10 (2025-09-17)
 
 ### New Features
