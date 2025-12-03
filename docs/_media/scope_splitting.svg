@@ -7,7 +7,7 @@
    viewBox="0 0 453.54332 260.78742"
    version="1.1"
    id="svg1"
-   inkscape:version="1.4 (e7c3feb1, 2024-10-09)"
+   inkscape:version="1.4.2 (ebf0e940, 2025-05-08)"
    sodipodi:docname="scope_splitting.svg"
    inkscape:export-filename="../../../Downloads/tier_splitting.png"
    inkscape:export-xdpi="400"
@@ -29,12 +29,12 @@
      inkscape:document-units="mm"
      showgrid="true"
      inkscape:zoom="2.1523095"
-     inkscape:cx="157.73754"
+     inkscape:cx="157.96985"
      inkscape:cy="102.21578"
-     inkscape:window-width="1728"
-     inkscape:window-height="1051"
+     inkscape:window-width="2560"
+     inkscape:window-height="1381"
      inkscape:window-x="0"
-     inkscape:window-y="38"
+     inkscape:window-y="31"
      inkscape:window-maximized="0"
      inkscape:current-layer="layer1"
      showguides="false"
@@ -1394,7 +1394,7 @@
          id="tspan74-33-9-0-5-8-6-2-7-6-6-8-1-0"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:14.6667px;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.21127;stroke-dasharray:none;stroke-opacity:1"
          x="304.25195"
-         y="146.4567">Scope 1</tspan></text><text
+         y="146.4567">Scope 2</tspan></text><text
        xml:space="preserve"
        style="font-style:italic;font-variant:normal;font-weight:500;font-stretch:normal;font-size:14.6667px;line-height:0.9;font-family:'CMU Classical Serif';-inkscape-font-specification:'CMU Classical Serif Medium Italic';text-align:end;text-anchor:end;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.21127;stroke-dasharray:none;stroke-opacity:1"
        x="667.32605"
@@ -1404,7 +1404,7 @@
          id="tspan74-33-9-0-5-8-6-2-7-6-6-8-1-0-4"
          style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:14.6667px;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.21127;stroke-dasharray:none;stroke-opacity:1"
          x="667.32605"
-         y="146.3981">Scope 2</tspan></text><text
+         y="146.3981">Scope 1</tspan></text><text
        xml:space="preserve"
        style="font-style:italic;font-variant:normal;font-weight:500;font-stretch:normal;font-size:14.6667px;line-height:0.9;font-family:'CMU Classical Serif';-inkscape-font-specification:'CMU Classical Serif Medium Italic';text-align:end;text-anchor:end;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.21127;stroke-dasharray:none;stroke-opacity:1"
        x="549.50964"
