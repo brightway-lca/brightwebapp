@@ -31,9 +31,15 @@ bibliography: paper.bib
 
 ---
 
+% Software submissions should make a clear contribution to the available open-source software that supports teaching and learning, or makes an educational process better (e.g., faster, easier, simpler). Examples include software to auto-grade student work, learning management systems, and student collaboration frameworks. Software should be feature-complete (no half-baked solutions).
+
+% Authors make the case for their submission’s contribution in the paper, under the heading “Statement of Need.” The criterion is less one of novelty, than need: submissions targeting subjects or applications already addressed by other resources are eligible, if the authors make a case for why they might be adopted by learners or other instructors. For example, authors could say that they approach a topic differently, that they update material to modern contexts, that the need is born of a new educational program, or a conference tutorial or other informal-learning scenario.
+
+
+
 # Summary
 
-`brightwebapp` is a Python package that provides a framework for building complex life-cycle assessment (LCA) and supply chain analysis applications that run in the browser using WebAssembly (WASM). It leverages the [Brightway](https://brightway.dev) LCA framework and the [Holoviz Panel](https://panel.holoviz.org) library to create interactive web applications. The package is designed as a template for developers to create their own LCA applications, with a focus on ease of use and flexibility.
+`brightwebapp` is a Python package that provides a framework for building complex life-cycle assessment (LCA) and supply chain analysis applications that run in the browser using WebAssembly (WASM). It leverages the [Brightway](https://brightway.dev) LCA framework and the [Holoviz Panel](https://panel.holoviz.org) [@holoviz_panel] library to create interactive web applications. The package is designed as a template for developers to create their own LCA applications, with a focus on ease of use and flexibility.
 
 # Statement of Need
 
@@ -46,7 +52,7 @@ In developing `brightwebapp`, all Brightway dependencies were made compatible wi
 
 # Template for Web Applications
 
-`brightwebapp` provides a template for building Holoviz Panel web applications and dashboards that run the Brightway framework in the browser using WebAssembly. To achieve this, it uses [Pyodide](https://pyodide.org/en/stable/), a Python distribution for the browser and Node.js that allows running Python code in the browser. The implemented example application demonstrates how to use the Brightway framework to perform a supply chain analysis of a sector in the USEEIO database [@yang2017useeio].
+`brightwebapp` provides a template for building Holoviz Panel web applications and dashboards that run the Brightway framework in the browser using WebAssembly. To achieve this, it uses [Pyodide](https://pyodide.org/en/stable/) [@pyodide], a Python distribution for the browser and Node.js that allows running Python code in the browser. The implemented example application demonstrates how to use the Brightway framework to perform a supply chain analysis of a sector in the USEEIO database [@yang2017useeio].
 
 # Acknowledgements
 
