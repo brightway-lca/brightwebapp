@@ -35,16 +35,20 @@ bibliography: paper.bib
 
 % Authors make the case for their submission’s contribution in the paper, under the heading “Statement of Need.” The criterion is less one of novelty, than need: submissions targeting subjects or applications already addressed by other resources are eligible, if the authors make a case for why they might be adopted by learners or other instructors. For example, authors could say that they approach a topic differently, that they update material to modern contexts, that the need is born of a new educational program, or a conference tutorial or other informal-learning scenario.
 
-
-
 # Summary
 
-`brightwebapp` is a Python package that provides a framework for building complex life-cycle assessment (LCA) and supply chain analysis applications that run in the browser using WebAssembly (WASM). It leverages the [Brightway](https://brightway.dev) LCA framework and the [Holoviz Panel](https://panel.holoviz.org) [@holoviz_panel] library to create interactive web applications. The package is designed as a template for developers to create their own LCA applications, with a focus on ease of use and flexibility.
+`brightwebapp` is a Python software package and web application that demonstrates 
+ a framework for building complex life-cycle assessment (LCA) and supply chain analysis applications that run in the browser using WebAssembly (WASM). It leverages the [Brightway](https://brightway.dev) LCA framework and the [Holoviz Panel](https://panel.holoviz.org) [@holoviz_panel] library to create interactive web applications with [Pyodide](https://pyodide.org/en/stable/) [@pyodide].
+The package is designed as a template for developers to create their own LCA applications, with a focus on ease of use and flexibility. As a stand-alone web application, it allows users to perform LCA and supply chain analysis of the entire US economy, based on theUSEEIO database [@yang2017useeio] directly in their web browser without the need for a local installation of Python or Brightway. This makes it an ideal tool for teaching and learning about LCA and supply chain analysis in a web-based environment.
 
 # Statement of Need
 
 The Brightway framework [@Mutel2017] is a powerful tool for life-cycle assessment and supply chain analysis. However, it traditionally requires a local Python environment, which poses a challenge for web applications and interactive dashboards. These applications must either use a complex server backend to run the framework or rely on serving static, pre-computed data to users. A recent example of this is the carculator application [@sacchi2022and], which assesses the environmental impact of automobiles.
-`brightwebapp` addresses this issue by allowing users to run LCA and supply chain analysis applications directly in their web browser, eliminating the need for a local installation. This grants users the flexibility to directly explore the impact of different LCA parameters.
+`brightwebapp` addresses this issue by allowing users to run LCA and supply chain analysis applications directly in their web browser, eliminating the need for a local installation. This grants users the flexibility to directly explore the impact of different LCA parameters. CONTEXT OF TEACHING: requires maintaining a server backend, which can be complex and costly. 
+
+# Supply Chain Analysis and Emission Scope Splitting
+
+![Diagram of the example use-case implemented in the BrightWebApp package. Here, every numbered circle represents a production node in the supply chain graph of automotive manufacturing. The supply chain can be split into different levels of "depth". Every node can be assigned to one of three "emission scopes", as defined by the Greenhouse Gas Protocol accounting standard [@bhatia2004greenhouse]] \label{fig:scope_splitting}](_media/scope_splitting.svg){height="5.5cm"}
 
 # Brightway and WebAssembly
 
