@@ -26,7 +26,7 @@ affiliations:
    index: 2
  - name: Départ de Sentier (DdS) Non-Profit Association, Riniken, Switzerland
    index: 3
-date: 31 DEcember 2025
+date: 31 December 2025
 bibliography: paper.bib
 
 ---
@@ -46,9 +46,12 @@ The package is designed as a template for developers to create their own LCA app
 The Brightway framework [@Mutel2017] is a powerful tool for life-cycle assessment and supply chain analysis. However, it traditionally requires a local Python environment, which poses a challenge for web applications and interactive dashboards. These applications must either use a complex server backend to run the framework or rely on serving static, pre-computed data to users. A recent example of this is the carculator application [@sacchi2022and], which assesses the environmental impact of automobiles.
 `brightwebapp` addresses this issue by allowing users to run LCA and supply chain analysis applications directly in their web browser, eliminating the need for a local installation. This grants users the flexibility to directly explore the impact of different LCA parameters. CONTEXT OF TEACHING: requires maintaining a server backend, which can be complex and costly. 
 
-# Supply Chain Analysis and Emission Scope Splitting
+# Emission Scope Splitting and Supply Chain Analysis
 
 ![Diagram of the example use-case implemented in the BrightWebApp package. Here, every numbered circle represents a production node in the supply chain graph of automotive manufacturing. The supply chain can be split into different levels of "depth". Every node can be assigned to one of three "emission scopes", as defined by the Greenhouse Gas Protocol accounting standard [@bhatia2004greenhouse]] \label{fig:scope_splitting}](_media/scope_splitting.svg){height="5.5cm"}
+
+![Diagram of a single branch in a supply chain tree in the context of the economic analysis implemented in the BrightWebApp. The diagram here shows a final demand of 100\$ worth of the product produced by sector 0. This induces demand for production in sectors upstream 1, which induces demand for production in sector 2, etc. Naturally, upstream processes contribute successively less. Red bars indicate the "base data" recorded in the economic data. Users can now change the "efficiency" (=how much upstream product is required) for individual processes. This provides instructive insights into how local efficiency changes impact the total value chain - and associated environmental or socio-economic impacts.] \label{fig:user_input_table}](_media/user_input_table.svg){height="3.5cm"}
+
 
 # Brightway and WebAssembly
 
@@ -57,6 +60,8 @@ In developing `brightwebapp`, all Brightway dependencies were made compatible wi
 # Template for Web Applications
 
 `brightwebapp` provides a template for building Holoviz Panel web applications and dashboards that run the Brightway framework in the browser using WebAssembly. To achieve this, it uses [Pyodide](https://pyodide.org/en/stable/) [@pyodide], a Python distribution for the browser and Node.js that allows running Python code in the browser. The implemented example application demonstrates how to use the Brightway framework to perform a supply chain analysis of a sector in the USEEIO database [@yang2017useeio].
+
+\clearpage
 
 # Acknowledgements
 
