@@ -41,9 +41,17 @@ The Brightway framework [@Mutel2017] is a powerful tool for life-cycle assessmen
 
 # Emission Scope Splitting and Supply Chain Analysis
 
-![Diagram of the example use-case implemented in the BrightWebApp package. Here, every numbered circle represents a production node in the supply chain graph of automotive manufacturing. The supply chain can be split into different levels of "depth". Every node can be assigned to one of three "emission scopes", as defined by the Greenhouse Gas Protocol accounting standard [@bhatia2004greenhouse] \label{fig:scope_splitting}](_media/scope_splitting.pdf){height="5.5cm"}
+BrightWebApp implements an example use-case that demonstrates how to split life-cycle assessment results into different "emission scopes" according to the Greenhouse Gas Protocol accounting standard [@bhatia2004greenhouse], shown in \autoref{fig:scope_splitting}.
 
-![Diagram of a single branch in a supply chain tree in the context of the economic analysis implemented in the BrightWebApp. The diagram here shows a final demand of 100\$ worth of the product produced by sector 0. This induces demand for production in sectors upstream 1, which induces demand for production in sector 2, etc. Naturally, upstream processes contribute successively less. Red bars indicate the "base data" recorded in the economic data. Users can now change the "efficiency" (=how much upstream product is required) for individual processes. This provides instructive insights into how local efficiency changes impact the total value chain - and associated environmental or socio-economic impacts. \label{fig:user_input_table}](_media/user_input_table.pdf){height="3.2cm"}
+> Scope 1: Direct GHG emissions. These are from sources that are owned or controlled by the company, for example, emissions from combustion in owned or controlled boilers, furnaces, vehicles, etc.
+> Scope 2: Electricity indirect GHG emissions. These are from the generation of purchased electricity consumed by the company. Scope 2 emissions physically occur at the facility where electricity is generated.
+> Scope 3: Other indirect GHG emissions. All other indirect emissions.
+
+![Diagram of the example use-case implemented in the BrightWebApp package. Here, every numbered circle represents a production node in the supply chain graph of automotive manufacturing. The supply chain can be split into different levels of "depth". Every node can be assigned to one of three "emission scopes", as defined by the Greenhouse Gas Protocol accounting standard [@bhatia2004greenhouse] \label{fig:scope_splitting}](_media/scope_splitting.pdf){height="5.3cm"}
+
+Users can also interactively explore how changes in the efficiency of individual production processes impact the overall supply chain and associated environmental impacts. This is illustrated in \autoref{fig:user_input_table}, which shows a single branch of a supply chain tree. Here, users can modify the efficiency of individual production processes (i.e. how much input is required to produce a unit of output) and immediately see how this affects the total value chain.
+
+![Diagram of a single branch in a supply chain tree in the context of the economic analysis implemented in the BrightWebApp. The diagram here shows a final demand of 100\$ worth of the product produced by sector 0. This induces demand for production in sectors upstream 1, which induces demand for production in sector 2, etc. Naturally, upstream processes contribute successively less. Red bars indicate the "base data" recorded in the economic data. Users can now change the "efficiency" (=how much upstream product is required) for individual processes. This provides instructive insights into how local efficiency changes impact the total value chain - and associated environmental or socio-economic impacts. \label{fig:user_input_table}](_media/user_input_table.pdf){height="3.4cm"}
 
 \clearpage
 
