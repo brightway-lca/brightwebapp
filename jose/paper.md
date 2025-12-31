@@ -33,9 +33,7 @@ bibliography: paper.bib
 
 # Summary
 
-`brightwebapp` is a Python software package and web application that demonstrates 
- a framework for building complex life-cycle assessment (LCA) and supply chain analysis applications that run in the browser using WebAssembly (WASM). It leverages the [Brightway](https://brightway.dev) LCA framework and the [Holoviz Panel](https://panel.holoviz.org) [@holoviz_panel] library to create interactive web applications with [Pyodide](https://pyodide.org/en/stable/) [@pyodide].
-The package is designed as a template for developers to create their own LCA applications, with a focus on ease of use and flexibility. As a stand-alone web application, it allows users to perform LCA and supply chain analysis of the entire US economy, based on theUSEEIO database [@yang2017useeio] directly in their web browser without the need for a local installation of Python or Brightway. This makes it an ideal tool for teaching and learning about LCA and supply chain analysis in a web-based environment.
+BrightWebApp is a [Python](https://www.python.org) software package, stand-alone web application and development template that demonstrates a framework for building complex life-cycle assessment (LCA) and supply chain analysis applications that run in the browser using [WebAssembly (WASM)](https://webassembly.org). It combines the Brightway [@Mutel2017] LCA framework for calculation with the Holoviz Panel [@holoviz_panel] library for interactivity, executing entirely client-side via Pyodide [@pyodide]. As a stand-alone web application, it allows users to perform life cycle assessment, life cycle impact assessment and supply chain analysis of the entire US economy, powered by the US Environmentally-Extended Input-Output (USEEIO) database [@yang2017useeio] directly in their web browser without the need for a local installation of either Python or Brightway. In this context, it is well suited for teaching quantitative sustainability assessment. As a development template, it provides a starting point for developers to build their own web applications that leverage the Brightway framework in the browser and comes with extensive documentation describing the build and deployment process.
 
 # Statement of Need
 
@@ -46,15 +44,6 @@ The Brightway framework [@Mutel2017] is a powerful tool for life-cycle assessmen
 ![Diagram of the example use-case implemented in the BrightWebApp package. Here, every numbered circle represents a production node in the supply chain graph of automotive manufacturing. The supply chain can be split into different levels of "depth". Every node can be assigned to one of three "emission scopes", as defined by the Greenhouse Gas Protocol accounting standard [@bhatia2004greenhouse] \label{fig:scope_splitting}](_media/scope_splitting.pdf){height="5.5cm"}
 
 ![Diagram of a single branch in a supply chain tree in the context of the economic analysis implemented in the BrightWebApp. The diagram here shows a final demand of 100\$ worth of the product produced by sector 0. This induces demand for production in sectors upstream 1, which induces demand for production in sector 2, etc. Naturally, upstream processes contribute successively less. Red bars indicate the "base data" recorded in the economic data. Users can now change the "efficiency" (=how much upstream product is required) for individual processes. This provides instructive insights into how local efficiency changes impact the total value chain - and associated environmental or socio-economic impacts. \label{fig:user_input_table}](_media/user_input_table.pdf){height="3.2cm"}
-
-
-# Brightway and WebAssembly
-
-In developing `brightwebapp`, all Brightway dependencies were made compatible with Pyodide, either by replacing them with pure Python implementations or with packages included in the Pyodide distribution. This ensures that the Brightway framework can run efficiently in the browser without requiring any additional server-side components.
-
-# Template for Web Applications
-
-`brightwebapp` provides a template for building Holoviz Panel web applications and dashboards that run the Brightway framework in the browser using WebAssembly. To achieve this, it uses [Pyodide](https://pyodide.org/en/stable/) [@pyodide], a Python distribution for the browser and Node.js that allows running Python code in the browser. The implemented example application demonstrates how to use the Brightway framework to perform a supply chain analysis of a sector in the USEEIO database [@yang2017useeio].
 
 \clearpage
 
