@@ -1,7 +1,9 @@
 ---
-title: 'BrightWebApp: A Framework for Complex Life-Cycle Assessment and Supply Chain Analysis in the Browser with WebAssembly and Brightway'
+title: 'BrightWebApp: A Framework for Teaching Life-Cycle Assessment and Supply Chain Analysis in the Browser with WebAssembly and Brightway'
 tags:
   - Python
+  - sustainability
+  - environmental impact
   - life-cycle assessment
   - supply chain analysis
   - web assembly
@@ -24,7 +26,7 @@ affiliations:
    index: 2
  - name: Départ de Sentier (DdS) Non-Profit Association, Riniken, Switzerland
    index: 3
-date: 01 July 2025
+date: 31 DEcember 2025
 bibliography: paper.bib
 
 ---
