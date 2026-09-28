@@ -23,17 +23,20 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering"
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
   "pandas>=1.3.0",
   "bw2data==4.5",
   "bw2io==0.9.10",
   "bw2calc==2.1",
   "bw_graph_tools==0.6",
+  "peewee<4", # bw2data 4.5 imports `playhouse.sqlite_ext.SqliteExtDatabase`, which was removed in peewee 4
+  "numpy<2.4", # bw_graph_tools 0.6 uses `numpy.in1d`, which was removed in NumPy 2.4
   "plotly"
 ]
 
