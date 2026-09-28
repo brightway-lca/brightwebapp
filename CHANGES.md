@@ -1,5 +1,14 @@
 # `brightwebapp` Changelog
 
+## 1.0.1 (2026-09-28)
+
+### Bug Fixes
+
+- Fixed `perform_graph_traversal` raising `TypeError: object of type 'NoneType' has no len()` when called with a pre-computed `lca` object instead of `method` and `demand`, which broke the LCA calculation in the web application. The function also no longer prints a spurious warning when called with `method` and `demand` only.
+- Fixed the `Burden(Direct)` column of `perform_graph_traversal` double-counting direct emissions: it was the sum of `direct_emissions_score` and `direct_emissions_score_outside_specific_flows`, but the latter is part of the former. `Burden(Direct)` is now `direct_emissions_score` (`= SupplyAmount * BurdenIntensity`). This also fixes the scope pie chart and the "Update Data based on User Table Input" results of the web application.
+- Added the missing upper bounds `peewee<4` (`bw2data==4.5` is incompatible with peewee 4) and `numpy<2.4` (`bw_graph_tools==0.6` uses `numpy.in1d`, which was removed in NumPy 2.4).
+- Raised the minimum Python version to 3.10, since the package does not import on Python 3.9.
+
 ## 1.0.0 (2025-09-26)
 
 First stable release.

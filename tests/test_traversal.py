@@ -90,6 +90,84 @@ class TestPerformLCA:
             )
 
 
+class TestPerformGraphTraversal:
+    """
+    Test suite for the `perform_graph_traversal` function.
+    """
+
+    def test_perform_graph_traversal_with_lca(self) -> None:
+        """
+        Tests that `perform_graph_traversal` accepts a pre-computed `lca` object
+        without `method` and `demand`, as used by the web application.
+        """
+        example_system_bike_production()
+        lca = perform_lca(
+            demand={bd.get_node(code='bike'): 1},
+            method=('IPCC', ),
+        )
+        df = perform_graph_traversal(
+            cutoff=0.01,
+            biosphere_cutoff=0.01,
+            max_calc=100,
+            return_format='dataframe',
+            lca=lca,
+        )
+        assert list(df['Name']) == ['bike production', 'steel production', 'electricity production']
+        assert df.iloc[0]['Scope'] == 1
+
+    @pytest.mark.parametrize('biosphere_cutoff', [0.01, 0.99])
+    def test_perform_graph_traversal_direct_burden(self, biosphere_cutoff: float) -> None:
+        """
+        Tests that the direct burden of every node equals its supply amount times its burden intensity,
+        and that the direct burdens do not exceed the total LCA score (i.e. are not double-counted),
+        also for direct emissions below the `biosphere_cutoff`.
+        """
+        example_system_bike_production()
+        lca = perform_lca(
+            demand={bd.get_node(code='bike'): 1},
+            method=('IPCC', ),
+        )
+        df = perform_graph_traversal(
+            cutoff=0.01,
+            biosphere_cutoff=biosphere_cutoff,
+            max_calc=100,
+            return_format='dataframe',
+            lca=lca,
+        )
+        assert df['Burden(Direct)'].tolist() == pytest.approx((df['SupplyAmount'] * df['BurdenIntensity']).tolist())
+        assert df['Burden(Direct)'].sum() <= lca.score
+
+    def test_perform_graph_traversal_with_method_and_demand(self) -> None:
+        """
+        Tests that `perform_graph_traversal` computes the LCA itself
+        when `method` and `demand` are provided instead of `lca`, as used by the API.
+        """
+        example_system_bike_production()
+        csv = perform_graph_traversal(
+            cutoff=0.01,
+            biosphere_cutoff=0.01,
+            max_calc=100,
+            return_format='csv',
+            demand={bd.get_node(code='bike'): 1},
+            method=('IPCC', ),
+        )
+        assert csv.startswith('UID,Scope,Name,')
+        assert 'bike production' in csv
+
+    def test_perform_graph_traversal_raises_error_without_lca_or_inputs(self) -> None:
+        """
+        Tests that `perform_graph_traversal` raises a ValueError
+        when neither `lca` nor `method` and `demand` are provided.
+        """
+        with pytest.raises(ValueError, match="both 'method' and 'demand' must be provided"):
+            perform_graph_traversal(
+                cutoff=0.01,
+                biosphere_cutoff=0.01,
+                max_calc=100,
+                return_format='dataframe',
+            )
+
+
 def test_traverse_graph() -> dict:
     """
     Tests the `_traverse_graph` function

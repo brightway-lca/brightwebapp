@@ -235,7 +235,7 @@ def _nodes_dict_to_dataframe(
                 'SupplyAmount': node.supply_amount,
                 'BurdenIntensity': node.direct_emissions_score/node.supply_amount,
                 'Burden(Cumulative)': node.cumulative_score,
-                'Burden(Direct)': node.direct_emissions_score + node.direct_emissions_score_outside_specific_flows,
+                'Burden(Direct)': node.direct_emissions_score,
                 'Depth': node.depth,
                 'activity_datapackage_id': node.activity_datapackage_id,
             }
@@ -549,9 +549,9 @@ def perform_graph_traversal(
 
         ```csv
         'UID,Scope,Name,SupplyAmount,BurdenIntensity,Burden(Direct),Depth,Branch\n
-        0,1,Automobiles; at manufacturer,1.0011622689671917,0.01544686198282003,0.023025946699367965,1,\n
-        1,3,Vehicle electrical and electronic equipment; at manufacturer,0.013377550027867835,0.0093078791680739,0.0002490332384485149,2,"[0, 1]"\n
-        2,3,Transmission and power train parts; at manufacturer,0.09230018343308832,0.016065891653621933,0.002965769493290854,2,"[0, 2]"\n
+        0,1,Automobiles; at manufacturer,1.0011622689671917,0.01544686198282003,0.015464815391143154,1,\n
+        1,3,Vehicle electrical and electronic equipment; at manufacturer,0.013377550027867835,0.0093078791680739,0.00012451661922425745,2,"[0, 1]"\n
+        2,3,Transmission and power train parts; at manufacturer,0.09230018343308832,0.016065891653621933,0.0014828847466454272,2,"[0, 2]"\n
         (...)
         ```
     
@@ -575,18 +575,10 @@ def perform_graph_traversal(
             demand=demand,
             method=method
         )
-    if lca is not None and (method is not None or demand is not None):
+    elif method is not None or demand is not None:
         print(
             "Warning: Both 'lca' and 'method'/'demand' are provided. "
             "'lca' will be used and 'method'/'demand' will be ignored."
-        )
-    if len(demand) != 1:
-        raise ValueError(
-            "Demand dictionary must contain exactly one activity."
-        )
-    if not isinstance(next(iter(demand)), Activity):
-        raise ValueError(
-            "The key in the demand dictionary must be a valid bw2data node dictionary."
         )
 
     traversal: dict = _traverse_graph(
