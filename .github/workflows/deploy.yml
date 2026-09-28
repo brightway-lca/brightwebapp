@@ -22,7 +22,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    uses: ./.github/workflows/test_webapp.yml
   deploy:
+    needs: test
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
