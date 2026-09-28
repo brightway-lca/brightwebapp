@@ -1,3 +1,2 @@
 lzma # must be loaded explicitly because https://pyodide.org/en/stable/usage/wasm-constraints.html#optional-modules
-typing-extensions # ???
-brightwebapp==0.0.6
+brightwebapp==1.0.1

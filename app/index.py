@@ -123,7 +123,7 @@ class panel_lca_class:
         # hardcoded for better Pyodide performance
         dict_methods_units = {
             "HRSP": "[kg PM2.5 eq]",
-            "OZON": "[kg O3 eq]",
+            "OZON": "[kg CFC11 eq]",
             "HNC": "[CTUh]",
             "WATR": "[m3]",
             "METL": "[kg]",
@@ -145,7 +145,7 @@ class panel_lca_class:
         """
         dict_methods_enriched = {
             'HRSP': [('Impact Potential', 'HRSP'), 'Human Health - Respiratory effects', '[kg PM2.5 eq]'],
-            'OZON': [('Impact Potential', 'OZON'), 'Ozone Depletion', '[kg O3 eq]'],
+            'OZON': [('Impact Potential', 'OZON'), 'Ozone Depletion', '[kg CFC11 eq]'],
             ...
         }
         """
@@ -157,7 +157,7 @@ class panel_lca_class:
         """
         list_methods_for_autocomplete = [
             ('HRSP', 'Human Health: Respiratory effects', '[kg PM2.5 eq]'),
-            ('OZON', 'Ozone Depletion', '[kg O3 eq]'),
+            ('OZON', 'Ozone Depletion', '[kg CFC11 eq]'),
             ...
         ]
         """
@@ -213,7 +213,11 @@ class panel_lca_class:
         self.graph_traversal_cutoff = widget_float_slider_cutoff.value / 100
 
 
-    def run_graph_traversal(self, event):
+    def run_graph_traversal(self, event) -> bool:
+        """
+        Performs the LCA calculation and graph traversal.
+        Returns `False` (and shows an error notification) if either fails.
+        """
         try:
             self.lca = perform_lca(
                 demand={self.chosen_activity: self.chosen_amount},
@@ -221,7 +225,7 @@ class panel_lca_class:
             )
         except ValueError as e:
             pn.state.notifications.error(str(e), duration=15000)
-            return
+            return False
         try:
             self.df_tabulator = perform_graph_traversal(
                 cutoff=self.graph_traversal_cutoff,
@@ -232,7 +236,8 @@ class panel_lca_class:
             )
         except ValueError as e:
             pn.state.notifications.error(str(e), duration=15000)
-            return
+            return False
+        return True
 
     def determine_scope_2(self, event):
         """
@@ -276,7 +281,7 @@ class panel_lca_class:
         if self.df_tabulator is not None and 'Scope' in self.df_tabulator.columns and 'Name' in self.df_tabulator.columns:
             dict_scope['Scope 1'] = self.df_tabulator.query('Scope == 1')['Burden(Direct)'].sum()
             dict_scope['Scope 2'] = self.df_tabulator.query('Scope == 2')['Burden(Direct)'].sum()
-            dict_scope['Scope 3'] = self.df_tabulator['Burden(Direct)'].sum() - dict_scope['Scope 1'] - dict_scope['Scope 2']
+            dict_scope['Scope 3'] = self.lca.score - dict_scope['Scope 1'] - dict_scope['Scope 2']
 
         panel_lca_class_instance.scope_dict = dict_scope
 
@@ -296,23 +301,40 @@ def button_action_load_database(event):
     widget_select_method.value = [item for item in panel_lca_class_instance.list_db_methods if 'GCC' in item[0]][0] # global warming as default value
 
 
+def clear_results():
+    """
+    Resets all results, and the widgets showing them, to their initial state.
+    """
+    panel_lca_class_instance.reset_results(None)
+    panel_lca_class_instance.df_tabulator_from_traversal = None
+    widget_tabulator.value = panel_lca_class_instance.df_tabulator
+    widget_number_lca_score.format = '{value:,.3f}'
+    widget_number_lca_score.value = 0
+    widget_plotly_figure_piechart.object = create_plotly_figure_piechart(panel_lca_class_instance.scope_dict)
+
+
 def button_action_perform_lca(event):
-    panel_lca_class_instance.bool_user_provided_data = False
-    if panel_lca_class_instance.df_tabulator is not None:
-        panel_lca_class_instance.reset_results(event)
     if widget_autocomplete_product.value == '':
         pn.state.notifications.error('Please select a reference product first!', duration=5000)
         return
     else:
         pn.state.notifications.info('Calculating LCA score...', duration=5000)
         pass
+    panel_lca_class_instance.bool_user_provided_data = False
+    if panel_lca_class_instance.df_tabulator is not None:
+        panel_lca_class_instance.reset_results(event)
     panel_lca_class_instance.set_chosen_activity(event)
     panel_lca_class_instance.set_chosen_method_and_unit(event)
     panel_lca_class_instance.set_chosen_amount(event)
     panel_lca_class_instance.set_graph_traversal_cutoff(event)
-    panel_lca_class_instance.run_graph_traversal(event)
+    if not panel_lca_class_instance.run_graph_traversal(event):
+        # do not show the results of a previous calculation next to the error notification
+        clear_results()
+        return
     panel_lca_class_instance.determine_scope_2(event)
-    widget_number_lca_score.format = f'{{value:,.3f}} {panel_lca_class_instance.chosen_method_unit}'
+    # scores of some impact assessment methods are too small to be shown with 3 decimals
+    score_format = ',.3f' if abs(panel_lca_class_instance.lca.score) >= 0.001 else '.3e'
+    widget_number_lca_score.format = f'{{value:{score_format}}} {panel_lca_class_instance.chosen_method_unit}'
     widget_tabulator.value = panel_lca_class_instance.df_tabulator
     panel_lca_class_instance.df_tabulator_from_traversal = panel_lca_class_instance.df_tabulator.copy()
     widget_number_lca_score.value = panel_lca_class_instance.lca.score
@@ -322,6 +344,9 @@ def button_action_perform_lca(event):
 
 
 def button_action_update_based_on_user_table_input(event):
+    if panel_lca_class_instance.df_tabulator_from_traversal is None:
+        pn.state.notifications.error('Please compute the LCA score first!', duration=5000)
+        return
     if panel_lca_class_instance.bool_user_provided_data == True:
         pn.state.notifications.warning('You have already provided user data. Please re-compute the LCA score to reset the table.', duration=10000)
         return
@@ -369,7 +394,7 @@ widget_autocomplete_product = pn.widgets.AutocompleteInput(
 )
 
 markdown_method_documentation = pn.pane.Markdown("""
-The impact assessment methods are documented [in Table 3](https://www.nature.com/articles/s41597-022-01293-7/tables/4) of the [USEEIO release article](https://doi.org/10.1038/s41597-022-01293-7).
+The impact assessment methods are documented <a href="https://www.nature.com/articles/s41597-022-01293-7/tables/4" target="_blank" rel="noopener">in Table 3</a> of the <a href="https://doi.org/10.1038/s41597-022-01293-7" target="_blank" rel="noopener">USEEIO release article</a>.
 """)
 
 widget_select_method = pn.widgets.Select( 
@@ -404,7 +429,7 @@ widget_float_slider_cutoff = pn.widgets.EditableFloatSlider(
 )
 
 markdown_cutoff_documentation = pn.pane.Markdown("""
-[A cut-off of 10%](https://docs.brightway.dev/projects/graphtools/en/latest/content/api/bw_graph_tools/graph_traversal/new_node_each_visit/index.html) means that an upstream process is shown if it accounts for at least 10% of total impact. The lower value of 1% is chosen here for performance reasons only.
+<a href="https://docs.brightway.dev/projects/graphtools/en/latest/content/api/bw_graph_tools/graph_traversal/new_node_each_visit/index.html" target="_blank" rel="noopener">A cut-off of 10%</a> means that an upstream process is shown if it accounts for at least 10% of total impact. The lower value of 1% is chosen here for performance reasons only.
 """)
 
 widget_button_udpate = pn.widgets.Button(

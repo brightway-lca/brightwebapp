@@ -9,6 +9,17 @@
 - Added the missing upper bounds `peewee<4` (`bw2data==4.5` is incompatible with peewee 4) and `numpy<2.4` (`bw_graph_tools==0.6` uses `numpy.in1d`, which was removed in NumPy 2.4).
 - Raised the minimum Python version to 3.10, since the package does not import on Python 3.9.
 
+### Web Application
+
+- The web application now loads all Python packages from a lock file (`pyodide/pyodide-lock.json`) instead of resolving them from PyPI on every page load. Previously, the release of `typing-inspection==0.4.4` (requiring `typing-extensions>=4.15.0`) broke the web application on load.
+- Added `app/build.py` to build the web application, and `app/smoke_test.py` to test it in a headless browser before every deployment and once a week.
+- Scope 3 emissions are now the LCA score minus Scope 1 and Scope 2 emissions, instead of the sum of the direct emissions of the processes shown in the table (which depended on the graph traversal cut-off).
+- Fixed the unit of the "Ozone Depletion" method (`kg CFC11 eq` instead of `kg O3 eq`).
+- Very small LCA scores are now shown in scientific notation instead of `0.000`.
+- If the graph traversal fails (e.g. because the cut-off is too high), the web application now shows only the error notification, instead of raising an exception and showing the results of the previous calculation.
+- Clicking "Update Data based on User Table Input" before computing an LCA score now shows a notification instead of raising an exception.
+- Documentation links now open in a new tab, instead of leaving the web application (and discarding the loaded database).
+
 ## 1.0.0 (2025-09-26)
 
 First stable release.

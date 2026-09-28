@@ -51,6 +51,11 @@ api = [
   "uvicorn[standard]",
   "ecoinvent_interface",
 ]
+webapp = [
+  "panel==1.7.1",
+  "bokeh==3.7.3",
+  "playwright",
+]
 
 [project.urls]
 source = "https://github.com/brightway-lca/brightwebapp"

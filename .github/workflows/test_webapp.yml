@@ -1,0 +1,41 @@
+# Tests the web application end-to-end in a headless browser (see app/smoke_test.py).
+name: Test Web Application
+
+on:
+  pull_request:
+    paths:
+      - app/**
+      - pyodide/**
+      - pyproject.toml
+      - .github/workflows/test_webapp.yml
+  schedule:
+    - cron: "0 6 * * 1" # weekly, tests the deployed web application
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install Playwright
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Check that pyodide/ is up to date with app/
+        if: github.event_name != 'schedule'
+        run: |
+          python -m pip install -e ".[webapp]"
+          python app/build.py
+          git diff --exit-code -- pyodide/index.js pyodide/pyodide-lock.json
+          git restore pyodide/index.html # contains random ids, test the committed file
+      - name: Run smoke test
+        run: python app/smoke_test.py ${{ github.event_name == 'schedule' && 'https://webapp.brightway.dev' || 'pyodide' }}
